@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/10/nuspec.xsd">
+  <metadata>
+		<id>$id$</id>
+		<version>$version$</version>
+		<title>$title$</title>
+		<authors>$author$</authors>
+		<owners>$author$</owners>
+		<description>$description$</description>
+		<!-- TODO: Customize this for searching -->
+		<tags>OData Client Repository data API entity EntityRepository</tags>
+
+		<iconUrl>http://builder/img/PrecisionDemand_Logo_64x64.png</iconUrl>
+		<requireLicenseAcceptance>false</requireLicenseAcceptance>
+		<copyright>Copyright © 2011-2013</copyright>
+		
+		<!-- TODO: Complete these when appropriate
+		<projectUrl>http://PROJECT_URL_HERE_OR_DELETE_THIS_LINE</projectUrl>
+		<releaseNotes>Summary of changes made in this release of the package.</releaseNotes> -->
+
+		<!-- Explicitly specify which assemblys are referenced when this project is referenced - this prevents CodeContracts files from being referenced. -->
+		<references>
+			<reference file="$id$.dll" />
+		</references>
+		
+  </metadata>
+
+	<!-- This project contains a Silverlight DLL, along with XML docs. -->
+	<files>
+		<!--<file src="$OutputPath$$id$.Silverlight.dll" target="lib\sl50" />-->
+		<file src="$OutputPath$$id$.pdb" target="lib\sl50" />
+		<!--<file src="$OutputPath$$id$.Silverlight.xml" target="lib\sl50" />-->
+		<file src="$OutputPath$\CodeContracts\$id$.Contracts.*" target="lib\sl50\CodeContracts" />
+	</files>
+	
+</package>

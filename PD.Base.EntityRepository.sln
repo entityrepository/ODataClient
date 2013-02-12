@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Base.EntityRepository.Api", "Api\Base.EntityRepository.Api.csproj", "{EBFB91EC-9ACE-4268-AA11-763BE24B0373}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Base.EntityRepository.Api.Silverlight", "Api\Base.EntityRepository.Api.Silverlight.csproj", "{DE12F88C-E14A-4550-8C18-5805E50D6733}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Base.EntityRepository.ODataClient.Silverlight", "ODataClient\Base.EntityRepository.ODataClient.Silverlight.csproj", "{2AF98171-66C7-4F4F-B6CF-9E61A88015D6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EBFB91EC-9ACE-4268-AA11-763BE24B0373}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EBFB91EC-9ACE-4268-AA11-763BE24B0373}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EBFB91EC-9ACE-4268-AA11-763BE24B0373}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EBFB91EC-9ACE-4268-AA11-763BE24B0373}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DE12F88C-E14A-4550-8C18-5805E50D6733}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DE12F88C-E14A-4550-8C18-5805E50D6733}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DE12F88C-E14A-4550-8C18-5805E50D6733}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DE12F88C-E14A-4550-8C18-5805E50D6733}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2AF98171-66C7-4F4F-B6CF-9E61A88015D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2AF98171-66C7-4F4F-B6CF-9E61A88015D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2AF98171-66C7-4F4F-B6CF-9E61A88015D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2AF98171-66C7-4F4F-B6CF-9E61A88015D6}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

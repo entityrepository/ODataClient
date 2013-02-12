@@ -112,13 +112,13 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Data.Edm.SL">
-      <HintPath>..\..\..\..\Core\trunk\packages\Microsoft.Data.Edm.5.2.0\lib\sl4\Microsoft.Data.Edm.SL.dll</HintPath>
+      <HintPath>$(PackagesDir)\Microsoft.Data.Edm.5.2.0\lib\sl4\Microsoft.Data.Edm.SL.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Data.OData.SL">
-      <HintPath>..\..\..\..\Core\trunk\packages\Microsoft.Data.OData.5.2.0\lib\sl4\Microsoft.Data.OData.SL.dll</HintPath>
+      <HintPath>$(PackagesDir)\Microsoft.Data.OData.5.2.0\lib\sl4\Microsoft.Data.OData.SL.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Data.Services.Client.SL">
-      <HintPath>..\..\..\..\Core\trunk\packages\Microsoft.Data.Services.Client.5.2.0\lib\sl4\Microsoft.Data.Services.Client.SL.dll</HintPath>
+      <HintPath>$(PackagesDir)\Microsoft.Data.Services.Client.5.2.0\lib\sl4\Microsoft.Data.Services.Client.SL.dll</HintPath>
     </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="System" />
@@ -161,6 +161,9 @@
       </FlavorProperties>
     </VisualStudio>
   </ProjectExtensions>
+
+  <Import Project="$(MSBuildExtensionsPath)\PrecisionDemand\PD.Common.targets" />
+  
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

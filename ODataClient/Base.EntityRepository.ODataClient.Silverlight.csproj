@@ -111,13 +111,16 @@
     <CodeContractsReferenceAssembly>Build</CodeContractsReferenceAssembly>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.Data.Edm.SL">
+    <Reference Include="Microsoft.Data.Edm.SL, Version=5.2.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>$(PackagesDir)\Microsoft.Data.Edm.5.2.0\lib\sl4\Microsoft.Data.Edm.SL.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Data.OData.SL">
+    <Reference Include="Microsoft.Data.OData.SL, Version=5.2.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>$(PackagesDir)\Microsoft.Data.OData.5.2.0\lib\sl4\Microsoft.Data.OData.SL.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Data.Services.Client.SL">
+    <Reference Include="Microsoft.Data.Services.Client.SL, Version=5.2.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>$(PackagesDir)\Microsoft.Data.Services.Client.5.2.0\lib\sl4\Microsoft.Data.Services.Client.SL.dll</HintPath>
     </Reference>
     <Reference Include="mscorlib" />
@@ -127,6 +130,9 @@
     </Reference>
     <Reference Include="System.Net" />
     <Reference Include="System.ServiceModel" />
+    <Reference Include="System.Spatial.SL">
+      <HintPath>$(PackagesDir)\System.Spatial.5.2.0\lib\sl4\System.Spatial.SL.dll</HintPath>
+    </Reference>
     <Reference Include="System.Windows" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq, Version=5.0.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
@@ -161,9 +167,7 @@
       </FlavorProperties>
     </VisualStudio>
   </ProjectExtensions>
-
   <Import Project="$(MSBuildExtensionsPath)\PrecisionDemand\PD.Common.targets" />
-  
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

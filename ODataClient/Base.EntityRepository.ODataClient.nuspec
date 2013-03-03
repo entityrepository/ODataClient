@@ -21,6 +21,7 @@
 		<!-- Explicitly specify which assemblys are referenced when this project is referenced - this prevents CodeContracts files from being referenced. -->
 		<references>
 			<reference file="$id$.dll" />
+			<reference file="$id$.Silverlight.dll" />
 		</references>
 		
   </metadata>

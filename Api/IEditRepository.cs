@@ -1,6 +1,6 @@
 ﻿// -----------------------------------------------------------------------
 // <copyright file="IEditRepository.cs" company="PrecisionDemand">
-// Copyright (c) 2012 PrecisionDemand.  All rights reserved.
+// Copyright (c) 2013 PrecisionDemand.  All rights reserved.
 // </copyright>
 // -----------------------------------------------------------------------
 
@@ -16,7 +16,7 @@ namespace PD.Base.EntityRepository.Api
 {
 	/// <summary>
 	/// An <c>IEditRepository</c> represents a queryable and editable collection of all persisted instances of the specified <typeparamref name="TEntity"/> type.  
-	/// <c>IEditRepository</c> objects are obtained from an <see cref="IDataContext"/> using the <see cref="IDataContext.Edit{TEntity}"/> method.
+	/// <c>IEditRepository</c> objects are obtained from an <see cref="IDataContextImpl"/> using the <see cref="IDataContextImpl.Edit{TEntity}"/> method.
 	/// </summary>
 	/// <typeparam name="TEntity">The entity type for this repository.</typeparam>
 	/// <remarks>
@@ -24,23 +24,25 @@ namespace PD.Base.EntityRepository.Api
 	/// queried from the remote repository, or that will be added to the remote repository, and which may have been modified or deleted. 
 	/// </remarks>
 	[ContractClass(typeof(EditRepositoryContract<>))]
-	public interface IEditRepository<TEntity> : IBaseRepository, IQueryable<TEntity>
+	public interface IEditRepository<TEntity> : IRepository<TEntity>
 		where TEntity : class
 	{
+
 		/// <summary>
-		/// The set of locally cached entities.
+		/// Returns a <see cref="IReadOnlyRepository{TEntity}"/> for accessing this repository in a read-only fashion.  Entities queried 
+		/// through an <see cref="IReadOnlyRepository{TEntity}"/> will not be change-tracked; and they do not support
+		/// writing back to the remote repository.
 		/// </summary>
+		/// <returns>The <see cref="IReadOnlyRepository{TEntity}"/> associated with the same <see cref="DataContext"/>, <typeparamref name="TEntity"/> type,
+		/// and <see cref="IRepository.Name"/>.</returns>
 		/// <remarks>
-		/// This collection consists of entities that have been previously queried, or have been added via <see cref="Attach"/>.
-		/// <para>
-		/// This collection can be queried directly when appropriate, to avoid the performance overhead of querying the backing repository.
-		/// </para>
+		/// If <typeparamref name="TEntity"/> implements <c>IFreezable</c>, all entities will be frozen before they are returned from the read-only repository.
 		/// </remarks>
-		ObservableCollection<TEntity> Local { get; }
+		IReadOnlyRepository<TEntity> ReadOnly { get; }
 
 		/// <summary>
 		/// Adds the given <paramref name="entity"/> to the context in the <see cref="EntityState.Added"/> state such that it will
-		/// be added to the remote repository when <see cref="IDataContext.SaveChanges"/> is called.
+		/// be added to the remote repository when <see cref="IDataContextImpl.SaveChanges"/> is called.
 		/// </summary>
 		/// <param name="entity">The entity to add.</param>
 		/// <returns>
@@ -54,7 +56,7 @@ namespace PD.Base.EntityRepository.Api
 
 		/// <summary>
 		/// Sets the state for the given <paramref name="entity"/> to <see cref="EntityState.Deleted"/>, such that it will be
-		/// deleted from the remote repository when <see cref="IDataContext.SaveChanges"/> is called.
+		/// deleted from the remote repository when <see cref="IDataContextImpl.SaveChanges"/> is called.
 		/// </summary>
 		/// <param name="entity">The entity to delete.</param>
 		/// <returns><c>true</c> if <paramref name="entity"/> is already in the context and is eligible for deletion.  <c>false</c> if 
@@ -70,7 +72,7 @@ namespace PD.Base.EntityRepository.Api
 		/// <param name="entity">The entity to attach.</param>
 		/// <param name="entityState">The <see cref="EntityState"/> value to associate with <paramref name="entity"/>.</param>
 		/// <returns>
-		/// The attached entity.
+		/// The attached entity.  This may not be the same object as <paramref name="entity"/>.
 		/// </returns>
 		/// <remarks>
 		/// Note that entities that are already in the context in some other state will have their state set to <paramref name="entityState"/>.
@@ -101,17 +103,21 @@ namespace PD.Base.EntityRepository.Api
 		/// <param name="entity">An entity.</param>
 		/// <returns>The current <see cref="EntityState"/> for <paramref name="entity"/>; or <c>null</c> if <c>entity</c> is not in the local collection.</returns>
 		EntityState? GetEntityState(TEntity entity);
+
 	}
+
 
 	[ContractClassFor(typeof(IEditRepository<>))]
 	internal abstract class EditRepositoryContract<TEntity> : IEditRepository<TEntity>
 		where TEntity : class
 	{
-		public ObservableCollection<TEntity> Local
+		#region IEditRepository<TEntity> Members
+
+		public IReadOnlyRepository<TEntity> ReadOnly
 		{
 			get
 			{
-				Contract.Ensures(Contract.Result<ObservableCollection<TEntity>>() != null);
+				Contract.Ensures(Contract.Result<IReadOnlyRepository<TEntity>>() != null);
 
 				throw new NotImplementedException();
 			}
@@ -154,41 +160,27 @@ namespace PD.Base.EntityRepository.Api
 
 		IEnumerator IEnumerable.GetEnumerator()
 		{
-			throw new NotImplementedException();
+			return GetEnumerator();
 		}
 
-		public IEnumerator<TEntity> GetEnumerator()
-		{
-			throw new NotImplementedException();
-		}
+		#endregion
 
-		public Expression Expression
-		{
-			get
-			{
-				throw new NotImplementedException();
-			}
-		}
+		#region Members provide by other contract classes
 
-		public Type ElementType
-		{
-			get
-			{
-				throw new NotImplementedException();
-			}
-		}
+		public abstract string Name { get; }
+		public abstract void ClearLocal();
 
-		public IQueryProvider Provider
-		{
-			get
-			{
-				throw new NotImplementedException();
-			}
-		}
+		public abstract IEnumerator<TEntity> GetEnumerator();
 
-		public void ClearLocal()
-		{
-			throw new NotImplementedException();
-		}
+		public abstract Expression Expression { get; }
+		public abstract Type ElementType { get; }
+		public abstract IQueryProvider Provider { get; }
+
+		public abstract ReadOnlyObservableCollection<TEntity> Local { get; }
+		public abstract IQueryRequest<TEntity> All { get; }
+		public abstract TEntity Attach(TEntity entity);
+		public abstract IRequest LoadReference<TProperty>(TEntity entity, Expression<Func<TEntity, TProperty>> propertyExpression) where TProperty : class;
+
+		#endregion
 	}
 }

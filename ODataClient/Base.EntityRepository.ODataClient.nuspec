@@ -25,12 +25,16 @@
 		
   </metadata>
 
-	<!-- This project contains a Silverlight DLL, along with XML docs. -->
+	<!-- This project contains a .NET 4.0.3 DLL, and a Silverlight DLL, along with XML docs. -->
 	<files>
-		<!--<file src="$TargetDir$$id$.Silverlight.dll" target="lib\sl50" />-->
-		<file src="$TargetDir$$id$.pdb" target="lib\sl50" />
-		<!--<file src="$TargetDir$$id$.Silverlight.xml" target="lib\sl50" />-->
-		<file src="$TargetDir$\CodeContracts\$id$.Contracts.*" target="lib\sl50\CodeContracts" />
+		<file src="$TargetDir$$id$.pdb" target="lib\net403" />
+		<!-- Code-contracts reference assembly -->
+		<file src="$TargetDir$\CodeContracts\$id$.Contracts.*" target="lib\net403\CodeContracts" />
+
+		<file src="$TargetDir$$id$.Silverlight.dll" target="lib\sl50" />
+		<file src="$TargetDir$$id$.Silverlight.pdb" target="lib\sl50" />
+		<file src="$TargetDir$$id$.Silverlight.xml" target="lib\sl50" />
+		<file src="$TargetDir$\CodeContracts\$id$.Silverlight.Contracts.*" target="lib\sl50\CodeContracts" />
 	</files>
-	
+
 </package>

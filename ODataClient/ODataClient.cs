@@ -4,21 +4,23 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-using System.Net;
-using System.ServiceModel;
-using System.Xml;
-using Microsoft.Data.Edm;
-using Microsoft.Data.Edm.Csdl;
-using Microsoft.Data.Edm.Validation;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Data.Services.Client;
 using System.Data.Services.Common;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using System.Net;
 using System.Reflection;
+using System.ServiceModel;
 using System.Threading.Tasks;
+using System.Xml;
+using Microsoft.Data.Edm;
+using Microsoft.Data.Edm.Csdl;
+using Microsoft.Data.Edm.Validation;
 using PD.Base.EntityRepository.Api;
+using PD.Base.EntityRepository.Api.Exceptions;
 
 namespace PD.Base.EntityRepository.ODataClient
 {
@@ -28,22 +30,33 @@ namespace PD.Base.EntityRepository.ODataClient
 	// Named repositories are necessary b/c we could have multiple tables backed by the same type
 	// Also TODO: Preview items
 	// TODO: Delayed load (resolve a referenced object that wasn't fetched initially)
-	public class ODataClient : IDataContext, IDisposable
+	public class ODataClient : IDataContextImpl, IDisposable
 	{
+
+		/// <summary>
+		/// The service base URI, plus a trailing slash.
+		/// </summary>
+		private readonly Uri _baseUriWithSlash;
+
 		/// <summary>
 		/// WCF Data Services client, with some customization.
 		/// </summary>
 		private readonly CustomDataServiceContext _dataServiceContext;
 
 		/// <summary>
+		/// Collection of edit repositories - only modified within a lock.
+		/// </summary>
+		private readonly Dictionary<string, Tuple<Type, IRepository>> _editRepositories = new Dictionary<string, Tuple<Type, IRepository>>();
+
+		/// <summary>
+		/// Collection of readonly repositories - only modified within a lock.
+		/// </summary>
+		private readonly Dictionary<string, Tuple<Type, IRepository>> _readOnlyRepositories = new Dictionary<string, Tuple<Type, IRepository>>();
+
+		/// <summary>
 		/// The assemblies containing the entity types
 		/// </summary>
 		private readonly ISet<Assembly> _entityAssemblies;
-
-		/// <summary>
-		/// All the namespaces containing the entity types in this service.
-		/// </summary>
-		private readonly ISet<string> _entityTypeNamespaces;
 
 		/// <summary>
 		/// All the namespaces in the odata service metadata.
@@ -56,35 +69,25 @@ namespace PD.Base.EntityRepository.ODataClient
 		private readonly Dictionary<string, Type> _entitySetTypes = new Dictionary<string, Type>();
 
 		/// <summary>
+		/// All the namespaces containing the entity types in this service.
+		/// </summary>
+		private readonly ISet<string> _entityTypeNamespaces;
+
+		/// <summary>
 		/// Task tracking asynchronous initialization.
 		/// </summary>
 		private readonly Task _initializeTask;
-
-		/// <summary>
-		/// The service base URI, plus a trailing slash.
-		/// </summary>
-		private readonly Uri _baseUriWithSlash;
-
-		/// <summary>
-		/// Collection of edit repositories - only modified within a lock.
-		/// </summary>
-		private readonly Dictionary<string, Tuple<Type, IBaseRepository>> _editRepositories = new Dictionary<string, Tuple<Type, IBaseRepository>>();
-
-		/// <summary>
-		/// Collection of readonly repositories - only modified within a lock.
-		/// </summary>
-		private readonly Dictionary<string, Tuple<Type, IBaseRepository>> _readOnlyRepositories = new Dictionary<string, Tuple<Type, IBaseRepository>>();
-
-		/// <summary>
-		/// Entity data model for the OData web service - not modified after initialization.
-		/// </summary>
-		private IEdmModel _edmModel;
 
 		/// <summary>Cache for <see cref="ResolveNameFromType"/>.</summary>
 		private readonly Dictionary<Type, string> _nameFromTypeCache = new Dictionary<Type, string>();
 
 		/// <summary>Cache for <see cref="ResolveTypeFromName"/>.</summary>
 		private readonly Dictionary<string, Type> _typeFromNameCache = new Dictionary<string, Type>();
+
+		/// <summary>
+		/// Entity data model for the OData web service - not modified after initialization.
+		/// </summary>
+		private IEdmModel _edmModel;
 
 		/// <summary>
 		/// Creates and begins initialization of this <see cref="ODataClient"/>
@@ -110,12 +113,10 @@ namespace PD.Base.EntityRepository.ODataClient
 			_baseUriWithSlash = uriBuilder.Uri;
 		}
 
-		// TODO: Remove this after initial development
-		// Only used for trying stuff out...
-		//public DataServiceContext WcfDataServiceContext
-		//{
-		//	get { return _dataServiceContext; }
-		//}
+		internal DataServiceContext DataServiceContext
+		{
+			get { return _dataServiceContext; }
+		}
 
 		/// <summary>
 		/// Returns a task that completes when initialization is complete.
@@ -125,7 +126,14 @@ namespace PD.Base.EntityRepository.ODataClient
 			get { return _initializeTask; }
 		}
 
-		#region IDataContext Members
+		#region IDisposable Members
+
+		public void Dispose()
+		{
+			// TODO
+		}
+
+		#endregion
 
 		public IEditRepository<TEntity> Edit<TEntity>(string entitySetName) where TEntity : class
 		{
@@ -134,7 +142,7 @@ namespace PD.Base.EntityRepository.ODataClient
 
 			lock (this)
 			{
-				Tuple<Type, IBaseRepository> editRepoRecord;
+				Tuple<Type, IRepository> editRepoRecord;
 				if (_editRepositories.TryGetValue(entitySetName, out editRepoRecord))
 				{
 					if (editRepoRecord.Item1 == entityType)
@@ -150,6 +158,7 @@ namespace PD.Base.EntityRepository.ODataClient
 				Type metadataEntityType;
 				if (! _entitySetTypes.TryGetValue(entitySetName, out metadataEntityType))
 				{
+					// TODO: Create a placeholder/mock IEditRepository
 					throw new ArgumentException(string.Format("No entity set found in {0} named {1}", _dataServiceContext.BaseUri, entitySetName));
 				}
 				if (metadataEntityType != entityType)
@@ -157,8 +166,8 @@ namespace PD.Base.EntityRepository.ODataClient
 					throw new InvalidOperationException(string.Format("EntitySet '{0}' is type {1} ; not {2}.", entitySetName, _entitySetTypes[entitySetName], entityType));
 				}
 
-				ODataClientEditRepository<TEntity> editRepository = new ODataClientEditRepository<TEntity>(_dataServiceContext, entitySetName);
-				_editRepositories.Add(entitySetName, new Tuple<Type, IBaseRepository>(entityType, editRepository));
+				ODataClientEditRepository<TEntity> editRepository = new ODataClientEditRepository<TEntity>(this, entitySetName);
+				_editRepositories.Add(entitySetName, new Tuple<Type, IRepository>(entityType, editRepository));
 				return editRepository;
 			}
 
@@ -166,38 +175,22 @@ namespace PD.Base.EntityRepository.ODataClient
 
 		public IReadOnlyRepository<TEntity> ReadOnly<TEntity>(string entitySetName) where TEntity : class
 		{
+			return null;
+			// TODO:
 			throw new NotImplementedException();
 		}
-		
-		public Task QueryAsync(params IQueryable[] queries)
+
+		public Task<ReadOnlyCollection<IRequest>> InvokeAsync(params IRequest[] requests)
 		{
 			// Convert the queries into DataServiceRequests
-			DataServiceRequest[] serviceRequests = new DataServiceRequest[queries.Length];
-			for (int i = 0; i < queries.Length; ++i)
-			{
-				IQueryable query = queries[i];
-				DataServiceRequest request = query as DataServiceRequest;
-				if (request == null)
-				{
-					IDataServiceRequestAccessor accessor = query as IDataServiceRequestAccessor;
-					if (accessor != null)
-					{
-						request = accessor.GetDataServiceRequest();
-					}
-				}
-				if (request == null)
-				{
-					throw new ArgumentException("Query " + query + " could not be converted to a DataServiceRequest.");
-				}
-				serviceRequests[i] = request;
-			}
-
+			ODataClientRequest[] internalRequests = requests.Cast<ODataClientRequest>().ToArray();
+			DataServiceRequest[] dataServiceRequests = internalRequests.Select(internalRequest => internalRequest.SendingRequest()).ToArray();
 			Task<DataServiceResponse> taskResponse =
-				Task.Factory.FromAsync<DataServiceRequest[], DataServiceResponse>((requests, callback, state) => _dataServiceContext.BeginExecuteBatch(callback, state, requests),
+				Task.Factory.FromAsync<DataServiceRequest[], DataServiceResponse>((reqs, callback, state) => _dataServiceContext.BeginExecuteBatch(callback, state, reqs),
 				                                                                  _dataServiceContext.EndExecuteBatch,
-				                                                                  serviceRequests,
-				                                                                  queries);
-			return taskResponse.ContinueWith(ProcessQueryResponse);
+				                                                                  dataServiceRequests,
+																				  internalRequests);
+			return taskResponse.ContinueWith<ReadOnlyCollection<IRequest>>(ProcessBatchResponse);
 		}
 
 		public Task SaveChanges()
@@ -231,36 +224,30 @@ namespace PD.Base.EntityRepository.ODataClient
 			}
 		}
 
-		#endregion
-
-		#region IDisposable Members
-
-		public void Dispose()
-		{
-			// TODO
-		}
-
-		#endregion
-
 		private Task BeginInitializeTask()
 		{
 			// Start an async request to the odata $metadata URL
 			HttpWebRequest webRequest = WebRequest.CreateHttp(_dataServiceContext.GetMetadataUri());
 			webRequest.Headers["DataServiceVersion"] = "3.0";
 			return Task.Factory.FromAsync<WebResponse>(webRequest.BeginGetResponse, webRequest.EndGetResponse, null)
-			           .ContinueWith(taskResponse => InitializeFromMetadata(taskResponse.Result));
+			           .ContinueWith(InitializeFromMetadata);
 		}
 
-		private void InitializeFromMetadata(WebResponse response)
+		private void InitializeFromMetadata(Task<WebResponse> responseTask)
 		{
-			using (response)
+			if (responseTask.IsFaulted)
+			{
+				throw new InitializationException("Could not initialize from metadata " + _dataServiceContext.GetMetadataUri(), responseTask.GetException());
+			}
+
+			using (WebResponse response = responseTask.Result)
 			{
 				using (XmlReader xmlReader = XmlReader.Create(response.GetResponseStream()))
 				{
 					IEnumerable<EdmError> edmErrors;
 					if (! EdmxReader.TryParse(xmlReader, out _edmModel, out edmErrors))
 					{
-						throw new ArgumentException("Error parsing OData schema from " + response.ResponseUri + " : " + string.Join("; ", edmErrors));
+						throw new InitializationException("Error parsing OData schema from " + response.ResponseUri + " : " + string.Join("; ", edmErrors));
 					}
 
 					foreach (IEdmEntityContainer entityContainer in _edmModel.EntityContainers())
@@ -270,12 +257,17 @@ namespace PD.Base.EntityRepository.ODataClient
 						{
 							string elementTypeName = entitySet.ElementType.FullName();
 							Type elementType = ResolveTypeFromName(elementTypeName);
-							_entitySetTypes.Add(entitySet.Name, elementType);
+							if (elementType != null)
+							{
+								_entitySetTypes.Add(entitySet.Name, elementType);
+							}
 						}
 					}
 
-					// _dataServiceContext.Format.LoadServiceModel = () => _edmModel;
-					_dataServiceContext.Format.UseJson(_edmModel);
+					_dataServiceContext.Format.LoadServiceModel = () => _edmModel;
+					// REVIEW: In case of difficult-to-understand errors, it can be useful to comment out this .UseJson() line
+					// Reason: The Atom code path seems to have more testing and better error messages.
+					_dataServiceContext.Format.UseJson();
 				}
 			}
 		}
@@ -283,7 +275,7 @@ namespace PD.Base.EntityRepository.ODataClient
 		/// <summary>
 		/// Call to ensure that initialization has completed.
 		/// </summary>
-		public void EnsureInitializationCompleted()
+		private void EnsureInitializationCompleted()
 		{
 			if (! InitializeTask.IsCompleted)
 			{
@@ -293,7 +285,7 @@ namespace PD.Base.EntityRepository.ODataClient
 
 			if (InitializeTask.Status != TaskStatus.RanToCompletion)
 			{
-				throw new InvalidOperationException("ODataClient initialization did not complete successfully.", InitializeTask.Exception);
+				throw new InitializationException("ODataClient initialization did not complete successfully.", InitializeTask.GetException());
 			}
 		}
 
@@ -337,6 +329,10 @@ namespace PD.Base.EntityRepository.ODataClient
 					{
 						break;
 					}
+				}
+				if (resolvedType != null)
+				{
+					break;
 				}
 			}
 
@@ -412,30 +408,40 @@ namespace PD.Base.EntityRepository.ODataClient
 			return entitySetUri;
 		}
 
-		private void ProcessQueryResponse(Task<DataServiceResponse> responseTask)
+		private ReadOnlyCollection<IRequest> ProcessBatchResponse(Task<DataServiceResponse> responseTask)
 		{
-			DataServiceResponse batchResponse = responseTask.Result;
-			IQueryable[] queries = (IQueryable[]) responseTask.AsyncState;
+			// Extract the requests from the state property
+			ODataClientRequest[] internalRequests = (ODataClientRequest[]) responseTask.AsyncState;
 
-			if (! batchResponse.IsBatchResponse)
+			DataServiceResponse batchResponse = responseTask.Result;
+
+			try
 			{
-				// TODO: Implement error reporting in each query in the batch
-				throw new CommunicationException("OData communications error - expected batch response, but received non-batch  " + batchResponse);
+				// Check for failures that affect all requests in the batch
+				if (!batchResponse.IsBatchResponse)
+				{
+					throw new CommunicationException("OData communications error - expected batch response, but received non-batch  " + batchResponse);
+				}
+				if ((batchResponse.BatchStatusCode < 200)
+				    || (batchResponse.BatchStatusCode > 299))
+				{
+					throw new CommunicationException("OData communications error - batch call returned batch status code " + batchResponse.BatchStatusCode);
+				}
 			}
-			if ((batchResponse.BatchStatusCode < 200)
-				|| (batchResponse.BatchStatusCode > 299))
+			catch (CommunicationException comEx)
 			{
-				// TODO: Implement error reporting in each query in the batch
-				throw new CommunicationException("OData communications error - batch call returned batch status code " + batchResponse.BatchStatusCode); 
+				foreach (ODataClientRequest oDataClientRequest in internalRequests)
+				{
+					oDataClientRequest.CommunicationsFailure(comEx);
+				}
 			}
-			
-			foreach (QueryOperationResponse queryResponse in batchResponse)
+
+			foreach (OperationResponse operationResponse in batchResponse)
 			{
-				var q = queryResponse.Query;
-				var s = queryResponse.StatusCode;
-				var e = queryResponse.Error;
-				var result = queryResponse.GetEnumerator();
+				ODataClientRequest request = internalRequests.Single(req => req.IsRequestFor(operationResponse));
+				request.HandleResponse(operationResponse);
 			}
+			return new ReadOnlyCollection<IRequest>(internalRequests);
 		}
 
 		#region Nested type: CustomDataServiceContext
@@ -445,6 +451,7 @@ namespace PD.Base.EntityRepository.ODataClient
 		/// </summary>
 		internal class CustomDataServiceContext : DataServiceContext
 		{
+
 			public CustomDataServiceContext(Uri serviceRoot, ODataClient client)
 				: base(serviceRoot, DataServiceProtocolVersion.V3)
 			{
@@ -457,6 +464,7 @@ namespace PD.Base.EntityRepository.ODataClient
 
 				this.IgnoreMissingProperties = false;
 			}
+
 		}
 
 		#endregion

@@ -11,6 +11,7 @@ namespace PD.Base.EntityRepository.Api
 	/// </summary>
 	public enum EntityState
 	{
+
 		/// <summary>
 		/// Default value - its presence generally indicates an error.
 		/// </summary>
@@ -40,5 +41,6 @@ namespace PD.Base.EntityRepository.Api
 		/// The entity is stored in the <see cref="IEditRepository{TEntity}"/>, and it has been marked as deleted.
 		/// </summary>
 		Deleted
+
 	}
 }

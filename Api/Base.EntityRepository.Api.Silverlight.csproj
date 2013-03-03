@@ -68,6 +68,8 @@
     <CodeContractsReferenceAssembly>Build</CodeContractsReferenceAssembly>
     <CodeContractsAnalysisWarningLevel>0</CodeContractsAnalysisWarningLevel>
     <DocumentationFile>Bin\Debug\PD.Base.EntityRepository.Api.Silverlight.XML</DocumentationFile>
+    <NoWarn>
+    </NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -120,13 +122,19 @@
     <Reference Include="System.Windows" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Base\Check.cs" />
     <Compile Include="DataContext.cs" />
     <Compile Include="EntityState.cs" />
-    <Compile Include="IBaseRepository.cs" />
-    <Compile Include="IDataContext.cs" />
+    <Compile Include="Exceptions\InitializationException.cs" />
+    <Compile Include="IDataContextImpl.cs" />
     <Compile Include="IEditRepository.cs" />
+    <Compile Include="IQueryRequest.cs" />
     <Compile Include="IReadOnlyRepository.cs" />
+    <Compile Include="IRepository.cs" />
+    <Compile Include="IRepositoryOfTEntity.cs" />
+    <Compile Include="IRequest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TaskExtensions.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Silverlight\$(SilverlightVersion)\Microsoft.Silverlight.CSharp.targets" />
   <ProjectExtensions>
@@ -136,9 +144,7 @@
       </FlavorProperties>
     </VisualStudio>
   </ProjectExtensions>
-
   <Import Project="$(MSBuildExtensionsPath)\PrecisionDemand\PD.Common.targets" />
-  
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

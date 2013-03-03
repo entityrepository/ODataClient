@@ -1,0 +1,23 @@
+﻿<UserControl x:Class="Scrum.Silverlight.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    d:DesignHeight="600" d:DesignWidth="800">
+
+    <Grid x:Name="LayoutRoot" Background="White">
+        <Button x:Name="btnLoadProjects" Content="Load Projects" HorizontalAlignment="Left" Margin="109,45,0,0" VerticalAlignment="Top" Width="117" Click="btnLoadProjects_Click"/>
+    <ComboBox x:Name="cboProjects" HorizontalAlignment="Right" Margin="0,47,34,0" VerticalAlignment="Top" Width="443">
+      <ComboBox.ItemTemplate>
+        <DataTemplate>
+          <StackPanel Orientation="Horizontal">
+            <TextBlock Text="{Binding Key}" Padding="5, 0, 5, 0" />
+            <TextBlock Text="{Binding Name}"/>
+          </StackPanel>
+        </DataTemplate>
+      </ComboBox.ItemTemplate>
+    </ComboBox>
+
+  </Grid>
+</UserControl>

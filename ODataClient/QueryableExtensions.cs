@@ -17,26 +17,27 @@ namespace PD.Base.EntityRepository.ODataClient
 	/// </summary>
 	public static class QueryableExtensions
 	{
+
 		internal static DataServiceQuery<TEntity> ConvertQueryableToDataServiceQuery<TEntity>(IQueryable queryable)
 		{
 			Contract.Ensures(Contract.Result<DataServiceQuery<TEntity>>() != null);
 
-			DataServiceQuery<TEntity> dataServiceQuery = queryable as DataServiceQuery<TEntity>;
-			if (dataServiceQuery == null)
+			ODataClientQuery<TEntity> odataClientQuery = queryable as ODataClientQuery<TEntity>;
+			if (odataClientQuery == null)
 			{
-				IDataServiceRequestAccessor accessor = queryable as IDataServiceRequestAccessor;
-				if (accessor != null)
+				BaseRepository<TEntity> repository = queryable as BaseRepository<TEntity>;
+				if (repository != null)
 				{
-					DataServiceRequest request = accessor.GetDataServiceRequest();
-					dataServiceQuery = request as DataServiceQuery<TEntity>;
+					odataClientQuery = (ODataClientQuery<TEntity>) repository.All;
 				}
 			}
-			if (dataServiceQuery == null)
+
+			if (odataClientQuery == null)
 			{
 				throw new ArgumentException(
-					string.Format("Query {0} could not be converted to a DataServiceQuery<{1}>", queryable, typeof(TEntity).FullName));
+					string.Format("Query {0} could not be converted to a ODataClientQuery<{1}>", queryable, typeof(TEntity).FullName));
 			}
-			return dataServiceQuery;
+			return odataClientQuery.GetDataServiceQuery();
 		}
 
 		#region IQueryable extensions
@@ -55,7 +56,7 @@ namespace PD.Base.EntityRepository.ODataClient
 			Contract.Requires<ArgumentNullException>(navigationProperty != null);
 
 			DataServiceQuery<TEntity> dataServiceQuery = ConvertQueryableToDataServiceQuery<TEntity>(source);
-			return dataServiceQuery.Expand(navigationProperty);
+			return new ODataClientQuery<TEntity>(dataServiceQuery.Expand(navigationProperty));
 		}
 
 		#endregion

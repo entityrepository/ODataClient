@@ -1,19 +1,19 @@
 ﻿// -----------------------------------------------------------------------
-// <copyright file="IBaseRepository.cs" company="PrecisionDemand">
+// <copyright file="IQueryRequest.cs" company="PrecisionDemand">
 // Copyright (c) 2013 PrecisionDemand.  All rights reserved.
 // </copyright>
 // -----------------------------------------------------------------------
 
+using System.Linq;
+
 namespace PD.Base.EntityRepository.Api
 {
 	/// <summary>
-	/// Common functionality between edit and read-only repositories
+	/// A query request.
 	/// </summary>
-	public interface IBaseRepository
+	/// <typeparam name="TEntity"></typeparam>
+	public interface IQueryRequest<out TEntity> : IRequest, IQueryable<TEntity>
 	{
-		/// <summary>
-		/// Clear all locally cached data.
-		/// </summary>
-		void ClearLocal();
+
 	}
 }

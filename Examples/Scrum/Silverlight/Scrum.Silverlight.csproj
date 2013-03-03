@@ -106,8 +106,9 @@
       <HintPath>$(PackagesDir)\Microsoft.Data.Services.Client.5.3.0\lib\sl4\Microsoft.Data.Services.Client.SL.dll</HintPath>
     </Reference>
     <Reference Include="mscorlib" />
-    <Reference Include="PD.Base.PortableUtil">
-      <HintPath>$(PackagesDir)\PD.Base.PortableUtil.1.1.0.2096-debug\lib\portable-net403+sl50\PD.Base.PortableUtil.dll</HintPath>
+    <Reference Include="PD.Base.PortableUtil, Version=1.1.0.2144, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(PackagesDir)\PD.Base.PortableUtil.1.1.0.2144-debug\lib\portable-net403+sl50\PD.Base.PortableUtil.dll</HintPath>
     </Reference>
     <Reference Include="System.Spatial.SL, Version=5.3.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -165,8 +166,8 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Silverlight\$(SilverlightVersion)\Microsoft.Silverlight.CSharp.targets" />
-	<Import Project="$(MSBuildExtensionsPath)\PrecisionDemand\PD.Common.targets" />
-	<!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+  <Import Project="$(MSBuildExtensionsPath)\PrecisionDemand\PD.Common.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
   </Target>

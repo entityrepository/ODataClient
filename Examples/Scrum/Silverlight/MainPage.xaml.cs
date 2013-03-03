@@ -28,7 +28,7 @@ namespace Scrum.Silverlight
 				var projectsQuery = _scrumClient.Projects.Include(p => p.Areas);
 				var completionTask = _scrumClient.InvokeAsync(projectsQuery);
 
-				completionTask.ContinueWithCurrentSynchronizationContext((task) =>
+				completionTask.ContinueInCurrentSynchronizationContext((task) =>
 				                                                         {
 					                                                         if (task.IsFaulted)
 					                                                         {

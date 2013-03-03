@@ -77,8 +77,8 @@
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
   </Target> -->
-  <Target Name="AfterBuild" Condition=" '$(RunTests)' == 'true' ">
-		<CallTarget Targets="Test" />
+  <Target Name="AfterBuild">
+    <CallTarget Targets="Test" Condition="'$(RunTests)' == 'true'" />
   </Target>
 
 </Project>

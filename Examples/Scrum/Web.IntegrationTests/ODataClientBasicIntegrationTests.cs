@@ -6,10 +6,10 @@
 
 using System;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 using PD.Base.EntityRepository.Api;
 using PD.Base.EntityRepository.ODataClient;
+using PD.Base.PortableUtil.Enum;
 using Scrum.Model;
 using Xunit;
 
@@ -23,7 +23,7 @@ namespace Scrum.Web.IntegrationTests
 		private const string c_odataTestServiceUrl = "http://localhost:42200/odata.svc/";
 
 		// TODO: Shorten the timeout for real testing to 4000 or so
-		private const int c_odataTestTimeout = 600000; // For debugging, this is 10m
+		internal const int TestTimeout = 600000; // For debugging, this is 10m
 
 		private readonly ScrumClient _client;
 
@@ -34,6 +34,15 @@ namespace Scrum.Web.IntegrationTests
 			// REVIEW: We should require that this is called before any repository properties are accessed.  But that's somewhat difficult to do,
 			// so for now, we have to wait for initialization to complete.
 			_client.EnsureInitializationCompleted();
+		}
+
+		[Fact]
+		public void VerifyDbEnumsLoaded()
+		{
+			short statusId = 2;
+			Assert.Same(DbEnumManager.LookupById<short, Status>(statusId), _client.Status.Local.Single(status => status.ID == statusId));
+			
+			Assert.Equal(Priority.Unknown, _client.Priority.Local.Single(priority => priority.ID == 0));
 		}
 
 		[Fact]
@@ -48,7 +57,7 @@ namespace Scrum.Web.IntegrationTests
 				                                       Assert.False(task.IsFaulted);
 				                                       Console.WriteLine(query.First());
 			                                       });
-			completion.Wait(c_odataTestTimeout);
+			completion.Wait(TestTimeout);
 		}
 
 		[Fact]
@@ -63,7 +72,7 @@ namespace Scrum.Web.IntegrationTests
 				                                       Assert.True(task.IsCompleted);
 				                                       Console.WriteLine(query.First());
 			                                       });
-			completion.Wait(c_odataTestTimeout);
+			completion.Wait(TestTimeout);
 		}
 
 		[Fact]
@@ -78,7 +87,7 @@ namespace Scrum.Web.IntegrationTests
 				                                       Assert.True(task.IsCompleted);
 				                                       workItem = query.First();
 			                                       });
-			completion.Wait(c_odataTestTimeout);
+			completion.Wait(TestTimeout);
 
 			Assert.NotNull(workItem);
 			Assert.NotEmpty(workItem.Areas);
@@ -88,16 +97,92 @@ namespace Scrum.Web.IntegrationTests
 		}
 
 		[Fact]
-		public void TestChangeTracking()
+		public void TestPropertyChangeTracking()
 		{
+			_client.Clear().Wait(TestTimeout);
+
+			// Fetch a work item, and all ProjectAreas
+			var workItemQuery = _client.WorkItems.Take(1);
+			_client.InvokeAsync(workItemQuery).Wait(TestTimeout);
+			WorkItem workItem = workItemQuery.First();
+			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
+
+			// Change a property to the same value, should result in no change
+			TimeSpan? previousTimeEstimate = workItem.TimeEstimate;
+			workItem.TimeEstimate = previousTimeEstimate;
+			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
+	
+			// Change a property, should result in a tracked change
+			workItem.TimeEstimate = new TimeSpan(0, 90, 0);
+			Assert.Equal(EntityState.Modified, _client.WorkItems.GetEntityState(workItem));
+
+			// Change it back - what happens?
+			workItem.TimeEstimate = previousTimeEstimate;
+			Assert.Equal(EntityState.Modified, _client.WorkItems.GetEntityState(workItem));
+			// TODO: It would be ideal to perform a diff between the original values and current value, and not
+			// track a change if there is no change in values or relationships.
+
+			// TODO: Implement ODataClient Revert
+			//// Revert the change
+			//_client.WorkItems.Revert(workItem);
+			//Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
+
+			// Make the change again
+			workItem.TimeEstimate = new TimeSpan(0, 90, 0);
+			Assert.Equal(EntityState.Modified, _client.WorkItems.GetEntityState(workItem));
+
+			// Should reset state to unmodified, not that doing so is a good idea...
+			_client.WorkItems.ClearLocal();
+			_client.WorkItems.Attach(workItem);
+			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
+		}
+
+		[Fact]
+		public void TestOneToOneRelationshipChangeTracking()
+		{
+			// Setup
+
+			_client.Clear().Wait(TestTimeout);
+
+			// Fetch a work item, and project
+			var workItemQuery = _client.WorkItems.Include(wi => wi.Project).Take(1);
+			// Query for all Projects
+			var allProjectsQuery = _client.Projects.All;
+	
+			_client.InvokeAsync(workItemQuery, allProjectsQuery).Wait(TestTimeout);
+			WorkItem workItem = workItemQuery.First();
+			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
+
+			int initialProjectID = workItem.Project.ID;
+
+
+			// Making changes
+
+			// Don't change the value - set the Project to the same
+			workItem.Project = _client.Projects.Local.Single(project => project.ID == initialProjectID);
+			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
+
+			// Change the Project
+			workItem.Project = _client.Projects.Local.First(project => project.ID != initialProjectID);
+			Assert.Equal(EntityState.Modified, _client.WorkItems.GetEntityState(workItem));
+
+			// Cleanup
+			_client.WorkItems.ClearLocal();
+		}
+		
+		[Fact]
+		public void TestOneToManyRelationshipChangeTracking()
+		{
+			_client.Clear().Wait(TestTimeout);
+
 			// Fetch a work item, and all ProjectAreas
 			var workItemQuery = _client.WorkItems.Include(wi => wi.Project).Include(wi => wi.Areas).Take(1);
-			_client.InvokeAsync(workItemQuery).Wait();
+			_client.InvokeAsync(workItemQuery).Wait(TestTimeout);
 			WorkItem workItem = workItemQuery.First();
 			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
 
 			var allAreasInProjectQuery = _client.ProjectAreas.Where(area => area.Project.ID == workItem.Project.ID);
-			_client.InvokeAsync(allAreasInProjectQuery).Wait();
+			_client.InvokeAsync(allAreasInProjectQuery).Wait(TestTimeout);
 			ProjectArea[] allAreasInProject = allAreasInProjectQuery.ToArray();
 
 			// Remove all current Areas from the workitem
@@ -111,12 +196,9 @@ namespace Scrum.Web.IntegrationTests
 			ProjectArea sourceControlArea = allAreasInProject.Single(area => area.Name.Equals("Source Control"));
 			workItem.Areas.Add(sourceControlArea);
 			Assert.Equal(EntityState.Modified, _client.WorkItems.GetEntityState(workItem));
-
-			_client.Clear();
 		}
 
 		// TODO tests:
-		// Change tracking
 		// Create-Update-Delete
 		// Change references
 		// Add mock repository objects when the server doesn't have them
@@ -151,36 +233,5 @@ namespace Scrum.Web.IntegrationTests
 		//	Assert.NotNull(workItem.Priority);
 		//}
 
-		#region Nested type: ScrumClient
-
-		/// <summary>
-		/// Client class representing the IDataContext in a more friendly manner (property repositories instead of a lookup)
-		/// This is a model for writing a client DataContext.
-		/// </summary>
-		internal class ScrumClient : DataContext
-		{
-
-			private static readonly Type s_modelType = typeof(Project);
-			private static readonly Assembly[] s_entityAssemblies = new[] { s_modelType.Assembly };
-			private static readonly string[] s_entityNamespaces = new[] { s_modelType.Namespace };
-
-			public ScrumClient(string scrumServiceUrl)
-				: base(new ODataClient(new Uri(scrumServiceUrl), s_entityAssemblies, s_entityNamespaces))
-			{
-				//WcfDataServiceContext = ((ODataClient) base._dataContextImpl).WcfDataServiceContext;
-			}
-
-			// TODO: Remove this after initial development
-			// Only used for trying stuff out...
-			//public DataServiceContext WcfDataServiceContext { get; private set; }
-
-
-			public IEditRepository<Project> Projects { get; protected set; }
-			public IEditRepository<ProjectArea> ProjectAreas { get; protected set; }
-			public IEditRepository<WorkItem> WorkItems { get; protected set; }
-
-		}
-
-		#endregion
 	}
 }

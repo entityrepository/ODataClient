@@ -111,6 +111,7 @@ namespace PD.Base.EntityRepository.Api
 
 		public abstract string Name { get; }
 		public abstract void ClearLocal();
+		public abstract Type EntityType { get; }
 
 		IEnumerator IEnumerable.GetEnumerator()
 		{

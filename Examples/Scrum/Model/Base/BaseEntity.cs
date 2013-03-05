@@ -35,11 +35,11 @@ namespace Scrum.Model.Base
 
 			if (collectionField == null)
 			{
-#if SILVERLIGHT
+//#if SILVERLIGHT
 				collectionField = new ObservableCollection<T>();
-#else
-				collectionField = new List<T>();
-#endif
+//#else
+//				collectionField = new List<T>();
+//#endif
 			}
 
 			return collectionField;
@@ -53,7 +53,7 @@ namespace Scrum.Model.Base
 			}
 			else
 			{
-#if SILVERLIGHT
+//#if SILVERLIGHT
 				if (value is ObservableCollection<T>)
 				{
 					collectionField = value;
@@ -62,9 +62,9 @@ namespace Scrum.Model.Base
 				{
 					collectionField = new ObservableCollection<T>(value);
 				}
-#else
-				collectionField = value;
-#endif
+//#else
+//				collectionField = value;
+//#endif
 			}
 		}
 

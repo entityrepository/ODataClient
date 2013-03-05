@@ -4,6 +4,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -34,6 +35,11 @@ namespace PD.Base.EntityRepository.Api
 		/// Returns a task that signals when initialization of the <see cref="IDataContextImpl"/> is complete.
 		/// </summary>
 		Task InitializeTask { get; }
+
+		/// <summary>
+		/// Returns all <see cref="IRepository"/> objects that exist within this <c>IDataContextImpl</c>.
+		/// </summary>
+		IEnumerable<IRepository> Repositories { get; }
 
 		/// <summary>
 		/// Returns the <see cref="IEditRepository{TEntity}"/> for querying and editing objects of type <typeparamref name="TEntity"/>, or a subclass of 

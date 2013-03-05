@@ -1,12 +1,14 @@
 ﻿// -----------------------------------------------------------------------
-// <copyright file="ODataClientEditRepository.cs" company="PrecisionDemand">
+// <copyright file="EditRepository.cs" company="PrecisionDemand">
 // Copyright (c) 2013 PrecisionDemand.  All rights reserved.
 // </copyright>
 // -----------------------------------------------------------------------
 
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data.Services.Client;
+using System.Linq;
 using PD.Base.EntityRepository.Api;
 
 namespace PD.Base.EntityRepository.ODataClient
@@ -15,20 +17,34 @@ namespace PD.Base.EntityRepository.ODataClient
 	/// The <see cref="IEditRepository{TEntity}"/> implementation for <see cref="ODataClient"/>.
 	/// </summary>
 	/// <typeparam name="TEntity">Entity type for this edit repository.</typeparam>
-	internal class ODataClientEditRepository<TEntity> : BaseRepository<TEntity>, IEditRepository<TEntity>
+	internal class EditRepository<TEntity> : BaseRepository<TEntity>, IEditRepository<TEntity>
 		where TEntity : class
 	{
 
 		private readonly DataServiceCollection<TEntity> _dataServiceCollection;
-		private readonly ReadOnlyObservableCollection<TEntity> _readOnlyLocalCollection; 
+		private readonly ReadOnlyObservableCollection<TEntity> _readOnlyLocalCollection;
 
-		internal ODataClientEditRepository(ODataClient odataClient, string entitySetName)
+		internal EditRepository(ODataClient odataClient, string entitySetName)
 			: base(odataClient, entitySetName)
 		{
 			// Provides change-tracking of INotifyPropertyChanged objects
-			// BUG: Currently creates a StackOverflowException... do our own change tracking?
 			_dataServiceCollection = new DataServiceCollection<TEntity>(DataServiceContext);
+
 			_readOnlyLocalCollection = new ReadOnlyObservableCollection<TEntity>(_dataServiceCollection);
+		}
+
+		#region BaseRepository<TEntity>
+
+		internal override TEntity[] ProcessQueryResults(IEnumerable<TEntity> entities)
+		{
+			TEntity[] array = entities.ToArray();
+
+			lock (this)
+			{
+				// TODO: Support deduping by Id, if not done by DataServiceCollection?
+				_dataServiceCollection.Load(array);
+			}
+			return array;
 		}
 
 		public override ReadOnlyObservableCollection<TEntity> Local
@@ -36,12 +52,17 @@ namespace PD.Base.EntityRepository.ODataClient
 			get { return _readOnlyLocalCollection; }
 		}
 
-		#region IEditRepository<TEntity> Members
-
-		public IReadOnlyRepository<TEntity> ReadOnly
+		public override void ClearLocal()
 		{
-			get { return ODataClient.ReadOnly<TEntity>(Name); }
+			lock (this)
+			{
+				_dataServiceCollection.Clear(true);
+			}
 		}
+
+		#endregion
+
+		#region IEditRepository<TEntity> Members
 
 		public TEntity Add(TEntity entity)
 		{
@@ -98,6 +119,7 @@ namespace PD.Base.EntityRepository.ODataClient
 
 		public EntityState? GetEntityState(TEntity entity)
 		{
+			// Check the EntityDescriptor - tracks value property changes
 			EntityDescriptor entityDescriptor = DataServiceContext.GetEntityDescriptor(entity);
 			if (entityDescriptor == null)
 			{
@@ -115,19 +137,16 @@ namespace PD.Base.EntityRepository.ODataClient
 				case EntityStates.Modified:
 					return EntityState.Modified;
 				case EntityStates.Unchanged:
-					return EntityState.Unmodified;
+					break;
 				default:
 					return null;
 			}
-		}
 
-		#endregion
-
-		#region IRepository members
-
-		public override void ClearLocal()
-		{
-			_dataServiceCollection.Clear(true);
+			// Check LinkDescriptors - tracks reference property changes
+			var changedLinks = DataServiceContext.Links.Where(linkDescriptor => Object.ReferenceEquals(entity, linkDescriptor.Source) &&
+			                                                                    ((linkDescriptor.State == EntityStates.Added) || (linkDescriptor.State == EntityStates.Deleted)
+			                                                                                                                  || (linkDescriptor.State == EntityStates.Modified)));
+			return changedLinks.Any() ? EntityState.Modified : EntityState.Unmodified;
 		}
 
 		#endregion

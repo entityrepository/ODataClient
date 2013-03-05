@@ -4,6 +4,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Data.Entity;
 using Scrum.Model;
 
@@ -29,6 +30,9 @@ namespace Scrum.Dal
 		public DbSet<WorkItemTimeLog> WorkItemTimeLog { get; set; }
 		public DbSet<WorkItem> WorkItems { get; set; }
 
+		public DbSet<Priority> Priority { get; set; }
+		public DbSet<Status> Status { get; set; }
+
 		protected override void OnModelCreating(DbModelBuilder modelBuilder)
 		{
 			modelBuilder.Entity<WorkItemTimeLog>().ToTable("WorkItemTimeLog");
@@ -50,6 +54,10 @@ namespace Scrum.Dal
 
 			modelBuilder.Entity<ProjectArea>().HasMany(projectArea => projectArea.Owners).WithMany()
 			            .Map(manyToManyConfig => manyToManyConfig.ToTable("ProjectAreaOwners"));
+
+			// For the DbEnum subclasses, turn off autoincrement so IDs of 0 (or flags) can work
+			modelBuilder.Entity<Priority>().Property(priority => priority.ID).HasDatabaseGeneratedOption(DatabaseGeneratedOption.None);
+			modelBuilder.Entity<Status>().Property(status => status.ID).HasDatabaseGeneratedOption(DatabaseGeneratedOption.None);
 
 			// TODO: Iterate over all entity types and set the correct default schema
 			// TODO: Iterate over all entity types and set correct key names + mappings

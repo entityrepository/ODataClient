@@ -76,7 +76,7 @@ namespace PD.Base.EntityRepository.ODataClient
 			Exception = exception;
 		}
 
-		internal virtual void HandleResponse(OperationResponse operationResponse)
+		internal virtual void HandleResponse(ODataClient client, OperationResponse operationResponse)
 		{
 			_requestState = RequestState.Completed;
 			if (operationResponse.Error != null)

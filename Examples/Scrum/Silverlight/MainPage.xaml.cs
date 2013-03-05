@@ -28,15 +28,16 @@ namespace Scrum.Silverlight
 				var projectsQuery = _scrumClient.Projects.Include(p => p.Areas);
 				var completionTask = _scrumClient.InvokeAsync(projectsQuery);
 
-				completionTask.ContinueInCurrentSynchronizationContext((task) =>
-				                                                         {
-					                                                         if (task.IsFaulted)
-					                                                         {
-						                                                         MessageBox.Show(task.Exception.ToString());
-						                                                         return;
-					                                                         }
-					                                                         cboProjects.ItemsSource = projectsQuery;
-				                                                         });
+				completionTask.ContinueInCurrentSynchronizationContext(
+					(task) =>
+					{
+						if (task.IsFaulted)
+						{
+							MessageBox.Show(task.Exception.ToString());
+							return;
+						}
+						cboProjects.ItemsSource = projectsQuery;
+					});
 			}
 			catch (Exception ex)
 			{

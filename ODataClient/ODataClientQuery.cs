@@ -8,6 +8,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data.Services.Client;
+using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
@@ -17,7 +18,7 @@ using PD.Base.EntityRepository.Api;
 namespace PD.Base.EntityRepository.ODataClient
 {
 	/// <summary>
-	/// Provides shared functionality for <see cref="ODataClientEditRepository{TEntity}"/> and <see cref="ODataClientReadOnlyRepository{TEntity}"/>. 
+	/// Provides shared functionality for <see cref="EditRepository{TEntity}"/> and <see cref="ReadOnlyRepository{TEntity}"/>. 
 	/// </summary>
 	/// <typeparam name="TEntity"></typeparam>
 	/// <remarks>
@@ -31,26 +32,36 @@ namespace PD.Base.EntityRepository.ODataClient
 	/// </remarks>
 	internal class ODataClientQuery<TEntity> : ODataClientRequest, IQueryRequest<TEntity>, IQueryProvider
 	{
-
+		/// <summary>
+		/// The WCF Data Services Client query associated with this query.  Never <c>null</c>.
+		/// </summary>
 		private readonly DataServiceQuery<TEntity> _dataServiceQuery;
+		/// <summary>
+		/// The results returned for this query.  May be <c>null</c>.
+		/// </summary>
 		private TEntity[] _results;
 
 		/// <summary>
 		/// Initializes an <see cref="ODataClientQuery{TEntity}"/> to return all entities in the repository.
 		/// </summary>
 		/// <param name="dataServiceContext"></param>
-		/// <param name="repository"></param>
+		/// <param name="repository">The <see cref="BaseRepository{TEntity}"/> to create a default query for.</param>
 		internal ODataClientQuery(DataServiceContext dataServiceContext, BaseRepository<TEntity> repository)
 		{
+			Contract.Requires<ArgumentNullException>(dataServiceContext != null);
+			Contract.Requires<ArgumentNullException>(repository != null);
+
 			_dataServiceQuery = dataServiceContext.CreateQuery<TEntity>(repository.Name);
 		}
 
 		/// <summary>
-		/// Initializes an <see cref="ODataClientQuery{TEntity}"/> based on a new <see cref="DataServiceQuery"/> that has not yet been sent.
+		/// Initializes an <see cref="ODataClientQuery{TEntity}"/> based on a new <see cref="DataServiceQuery{TElement}"/> that has not yet been sent.
 		/// </summary>
-		/// <param name="dataServiceQuery"></param>
+		/// <param name="dataServiceQuery">The <see cref="DataServiceQuery{TElement}"/> wrapped by this <see cref="ODataClientQuery{TEntity}"/>.</param>
 		internal ODataClientQuery(DataServiceQuery<TEntity> dataServiceQuery)
 		{
+			Contract.Requires<ArgumentNullException>(dataServiceQuery != null);
+
 			_dataServiceQuery = dataServiceQuery;
 		}
 
@@ -183,15 +194,16 @@ namespace PD.Base.EntityRepository.ODataClient
 			       && Equals(queryResponse.Query, _dataServiceQuery);
 		}
 
-		internal override void HandleResponse(OperationResponse operationResponse)
+		internal override void HandleResponse(ODataClient client, OperationResponse operationResponse)
 		{
 			IEnumerable<TEntity> results = operationResponse as IEnumerable<TEntity>;
 			if (results == null)
 			{
 				throw new InvalidOperationException("Expected results from " + operationResponse + " to be IEnumerable<" + typeof(TEntity) + ">.");
 			}
-			_results = results.ToArray();
-			base.HandleResponse(operationResponse);
+			IEnumerable<TEntity> processedResults = client.ProcessQueryResults(results);
+			_results = processedResults.ToArray();
+			base.HandleResponse(client, operationResponse);
 		}
 
 		#endregion

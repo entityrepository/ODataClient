@@ -5,8 +5,11 @@
 // -----------------------------------------------------------------------
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.Contracts;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -52,6 +55,14 @@ namespace PD.Base.EntityRepository.Api
 		public Task InitializeTask
 		{
 			get { return _initializeTask; }
+		}
+
+		/// <summary>
+		/// Returns all <see cref="IRepository"/> objects that exist within this <see cref="DataContext"/>.
+		/// </summary>
+		public IEnumerable<IRepository> Repositories
+		{
+			get { return _dataContextImpl.Repositories; }
 		}
 
 		internal IDataContextImpl DataContextImpl
@@ -283,9 +294,10 @@ namespace PD.Base.EntityRepository.Api
 		}
 
 		/// <summary>
-		/// Clears the local cache for all entity types, so that the <see cref="IDataContextImpl"/> can start new. 
+		/// Clears the local cache for all entity types, so that the <see cref="IDataContextImpl"/> can start new. Then
+		/// any initialize actions passed to the constructor are run asynchronously.
 		/// </summary>
-		public void Clear()
+		public Task Clear()
 		{
 			EnsureInitializationCompleted();
 			_dataContextImpl.Clear();
@@ -294,7 +306,54 @@ namespace PD.Base.EntityRepository.Api
 			{
 				_initializeTask = Task.Factory.StartNew(() => _initializeAction(this));
 			}
+			return _initializeTask;
 		}
+
+		/// <summary>
+		/// Provides a mechanism for loading all entities of specific entity types on startup, when this method is used
+		/// in the <c>initializeAction</c> argument to <see cref="DataContext"/>.
+		/// 
+		/// This method iterates over all established repositories in <paramref name="dataContext"/>, and provides
+		/// the option to load all entities in each repository.
+		/// </summary>
+		/// <param name="dataContext">The <see cref="DataContext"/>.</param>
+		/// <param name="typeSelector">A predicate that returns <c>true</c> for the repositories that should be pre-loaded.</param>
+		/// <param name="perResultInitializer">An optional per-result initializer that is called for each loaded entity set.</param>
+		/// <returns>A task that can be used to track completion of pre-loading.</returns>
+		public static Task PreLoad(DataContext dataContext, Predicate<Type> typeSelector, Action<IEnumerable> perResultInitializer = null)
+		{
+			// Build repository.All queries for each type that matches typeSelector
+			List<IRequest> queries = new List<IRequest>();
+			foreach (IRepository repository in dataContext.Repositories)
+			{
+				if (typeSelector(repository.EntityType))
+				{
+					// query = repository.All; // using reflection b/c .All is on a generic subclass
+					IRequest query = (IRequest) repository.GetType().GetProperty("All").GetValue(repository, null);
+					queries.Add(query);
+				}
+			}
+
+			if (! queries.Any())
+			{
+				// Log("No types preloaded");
+				return new Task(() => { });
+			}
+
+			// Synchronous call for all entities that match the queries
+			return dataContext.DataContextImpl.InvokeAsync(queries.ToArray()).ContinueWith(
+				completion =>
+				{
+					// If action is provided, allow post query intialization
+					if (perResultInitializer != null)
+					{
+						foreach (object query in queries)
+						{
+							perResultInitializer((IEnumerable) query);
+						}
+					}
+				});
+		}		 
 
 	}
 }

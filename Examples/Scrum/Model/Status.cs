@@ -5,6 +5,7 @@
 // -----------------------------------------------------------------------
 
 using System;
+using PD.Base.PortableUtil.Enum;
 
 namespace Scrum.Model
 {
@@ -12,7 +13,7 @@ namespace Scrum.Model
 	/// <summary>
 	/// The status of a work item.
 	/// </summary>
-	public class Status // : IFreezable
+	public class Status : NamedDbEnum<short, Status> // : IFreezable
 	{
 
 		/// <summary>
@@ -30,17 +31,13 @@ namespace Scrum.Model
 		public static readonly Status Deployed = new Status(5, "Deployed");
 		public static readonly Status Closed = new Status(6, "Closed");
 
+		// Needed for deserialization
 		public Status()
 		{}
 
 		private Status(short id, string name)
-		{
-			ID = id;
-			Name = name;
-		}
-
-		public short ID { get; set; }
-		public string Name { get; set; }
+			: base(id, name)
+		{}
 
 	}
 }

@@ -25,7 +25,7 @@ using PD.Base.EntityRepository.Api.Exceptions;
 namespace PD.Base.EntityRepository.ODataClient
 {
 	/// <summary>
-	/// An <see cref="IDataContext"/> implementation that wraps a WCF Data Services client.
+	/// An <see cref="IDataContextImpl"/> implementation that wraps a WCF Data Services client.
 	/// </summary>
 	// Named repositories are necessary b/c we could have multiple tables backed by the same type
 	// Also TODO: Preview items
@@ -67,6 +67,11 @@ namespace PD.Base.EntityRepository.ODataClient
 		/// Map of all entitySet names to types - not modified after initialization.
 		/// </summary>
 		private readonly Dictionary<string, Type> _entitySetTypes = new Dictionary<string, Type>();
+
+		/// <summary>
+		/// Map of entity type to repository - not modified after initialization.  This ensures that only a single repository is used per type.
+		/// </summary>
+		private readonly Dictionary<Type, IRepository> _cacheRepositoryForType = new Dictionary<Type, IRepository>();
 
 		/// <summary>
 		/// All the namespaces containing the entity types in this service.
@@ -126,8 +131,17 @@ namespace PD.Base.EntityRepository.ODataClient
 			get { return _initializeTask; }
 		}
 
+		/// <inheritdoc />
+		public IEnumerable<IRepository> Repositories
+		{
+			get { return _cacheRepositoryForType.Values; }
+		}
+
 		#region IDisposable Members
 
+		/// <summary>
+		/// Disposes all resources held by the <c>ODataClient</c>.  Currently not implemented.
+		/// </summary>
 		public void Dispose()
 		{
 			// TODO
@@ -135,6 +149,7 @@ namespace PD.Base.EntityRepository.ODataClient
 
 		#endregion
 
+		/// <inheritdoc />
 		public IEditRepository<TEntity> Edit<TEntity>(string entitySetName) where TEntity : class
 		{
 			EnsureInitializationCompleted();
@@ -142,6 +157,7 @@ namespace PD.Base.EntityRepository.ODataClient
 
 			lock (this)
 			{
+				// Read from cached EditRepository s.
 				Tuple<Type, IRepository> editRepoRecord;
 				if (_editRepositories.TryGetValue(entitySetName, out editRepoRecord))
 				{
@@ -155,6 +171,7 @@ namespace PD.Base.EntityRepository.ODataClient
 					}
 				}
 
+				// Validate against the server metadata
 				Type metadataEntityType;
 				if (! _entitySetTypes.TryGetValue(entitySetName, out metadataEntityType))
 				{
@@ -166,20 +183,55 @@ namespace PD.Base.EntityRepository.ODataClient
 					throw new InvalidOperationException(string.Format("EntitySet '{0}' is type {1} ; not {2}.", entitySetName, _entitySetTypes[entitySetName], entityType));
 				}
 
-				ODataClientEditRepository<TEntity> editRepository = new ODataClientEditRepository<TEntity>(this, entitySetName);
+				EditRepository<TEntity> editRepository = new EditRepository<TEntity>(this, entitySetName);
 				_editRepositories.Add(entitySetName, new Tuple<Type, IRepository>(entityType, editRepository));
+				_cacheRepositoryForType.Add(entityType, editRepository);
 				return editRepository;
 			}
-
 		}
 
+		/// <inheritdoc />
 		public IReadOnlyRepository<TEntity> ReadOnly<TEntity>(string entitySetName) where TEntity : class
 		{
-			return null;
-			// TODO:
-			throw new NotImplementedException();
+			EnsureInitializationCompleted();
+			Type entityType = typeof(TEntity);
+
+			lock (this)
+			{
+				// Read from cached ReadOnlyRepository s.
+				Tuple<Type, IRepository> readonlyRepoRecord;
+				if (_readOnlyRepositories.TryGetValue(entitySetName, out readonlyRepoRecord))
+				{
+					if (readonlyRepoRecord.Item1 == entityType)
+					{
+						return (IReadOnlyRepository<TEntity>) readonlyRepoRecord.Item2;
+					}
+					else
+					{
+						throw new InvalidOperationException(string.Format("EntitySet '{0}' is type {1} ; not {2}.", entitySetName, readonlyRepoRecord.Item1, entityType));
+					}
+				}
+
+				// Validate against the server metadata
+				Type metadataEntityType;
+				if (!_entitySetTypes.TryGetValue(entitySetName, out metadataEntityType))
+				{
+					// TODO: Create a placeholder/mock IReadOnlyRepository?
+					throw new ArgumentException(string.Format("No entity set found in {0} named {1}", _dataServiceContext.BaseUri, entitySetName));
+				}
+				if (metadataEntityType != entityType)
+				{
+					throw new InvalidOperationException(string.Format("EntitySet '{0}' is type {1} ; not {2}.", entitySetName, _entitySetTypes[entitySetName], entityType));
+				}
+
+				ReadOnlyRepository<TEntity> readOnlyRepository = new ReadOnlyRepository<TEntity>(this, entitySetName);
+				_readOnlyRepositories.Add(entitySetName, new Tuple<Type, IRepository>(entityType, readOnlyRepository));
+				_cacheRepositoryForType.Add(entityType, readOnlyRepository);
+				return readOnlyRepository;
+			}
 		}
 
+		/// <inheritdoc />
 		public Task<ReadOnlyCollection<IRequest>> InvokeAsync(params IRequest[] requests)
 		{
 			// Convert the queries into DataServiceRequests
@@ -193,16 +245,19 @@ namespace PD.Base.EntityRepository.ODataClient
 			return taskResponse.ContinueWith<ReadOnlyCollection<IRequest>>(ProcessBatchResponse);
 		}
 
+		/// <inheritdoc />
 		public Task SaveChanges()
 		{
 			throw new NotImplementedException();
 		}
 
+		/// <inheritdoc />
 		public void RevertChanges()
 		{
 			throw new NotImplementedException();
 		}
 
+		/// <inheritdoc />
 		public void Clear()
 		{
 			lock (this)
@@ -273,7 +328,7 @@ namespace PD.Base.EntityRepository.ODataClient
 		}
 
 		/// <summary>
-		/// Call to ensure that initialization has completed.
+		/// Ensures that initialization has completed.
 		/// </summary>
 		private void EnsureInitializationCompleted()
 		{
@@ -397,6 +452,12 @@ namespace PD.Base.EntityRepository.ODataClient
 			return odataTypeName;
 		}
 
+		/// <summary>
+		/// Returns the <see cref="Uri"/> for an odata entityset.
+		/// </summary>
+		/// <param name="entitySetName">The entity set name.</param>
+		/// <returns>A <see cref="Uri"/> for the entity set.</returns>
+		/// <remarks>Note that this method does not validate that the entity set exists or that the returned <c>Uri</c> is valid.</remarks>
 		protected Uri ResolveEntitySet(string entitySetName)
 		{
 			// TODO: Validate the entitySetName?
@@ -439,9 +500,27 @@ namespace PD.Base.EntityRepository.ODataClient
 			foreach (OperationResponse operationResponse in batchResponse)
 			{
 				ODataClientRequest request = internalRequests.Single(req => req.IsRequestFor(operationResponse));
-				request.HandleResponse(operationResponse);
+				request.HandleResponse(this, operationResponse);
 			}
 			return new ReadOnlyCollection<IRequest>(internalRequests);
+		}
+
+		internal IEnumerable<TEntity> ProcessQueryResults<TEntity>(IEnumerable<TEntity> results)
+		{
+			// TODO: Break up related entities and process them
+			// TODO: Join related entities
+
+			// Find the repository for the type
+			IRepository repository;
+			if (! _cacheRepositoryForType.TryGetValue(typeof(TEntity), out repository))
+			{
+				// Doesn't match an existing repository, don't do anything
+				return results;
+			}
+
+			// Delegate to the repository to do the processing
+			BaseRepository<TEntity> baseRepository = (BaseRepository<TEntity>) repository;
+			return baseRepository.ProcessQueryResults(results);
 		}
 
 		#region Nested type: CustomDataServiceContext
@@ -468,5 +547,6 @@ namespace PD.Base.EntityRepository.ODataClient
 		}
 
 		#endregion
+
 	}
 }

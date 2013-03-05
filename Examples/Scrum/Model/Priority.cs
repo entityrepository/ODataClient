@@ -5,12 +5,13 @@
 // -----------------------------------------------------------------------
 
 using System;
+using PD.Base.PortableUtil.Enum;
 
 namespace Scrum.Model
 {
 
 
-	public class Priority
+	public sealed class Priority : NamedDbEnum<short, Priority>
 	{
 
 		/// <summary>
@@ -28,17 +29,14 @@ namespace Scrum.Model
 		public static readonly Priority Critical = new Priority(5, "Critical");
 		public static readonly Priority Blocking = new Priority(6, "Blocking");
 
+		// Needed for deserialization
 		public Priority()
 		{}
 
-		protected Priority(short id, string name)
-		{
-			ID = id;
-			Name = name;
-		}
-
-		public short ID { get; set; }
-		public string Name { get; set; }
+		private Priority(short id, string name)
+			: base(id, name)
+		{}
 
 	}
+
 }

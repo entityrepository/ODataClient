@@ -29,18 +29,6 @@ namespace PD.Base.EntityRepository.Api
 	{
 
 		/// <summary>
-		/// Returns a <see cref="IReadOnlyRepository{TEntity}"/> for accessing this repository in a read-only fashion.  Entities queried 
-		/// through an <see cref="IReadOnlyRepository{TEntity}"/> will not be change-tracked; and they do not support
-		/// writing back to the remote repository.
-		/// </summary>
-		/// <returns>The <see cref="IReadOnlyRepository{TEntity}"/> associated with the same <see cref="DataContext"/>, <typeparamref name="TEntity"/> type,
-		/// and <see cref="IRepository.Name"/>.</returns>
-		/// <remarks>
-		/// If <typeparamref name="TEntity"/> implements <c>IFreezable</c>, all entities will be frozen before they are returned from the read-only repository.
-		/// </remarks>
-		IReadOnlyRepository<TEntity> ReadOnly { get; }
-
-		/// <summary>
 		/// Adds the given <paramref name="entity"/> to the context in the <see cref="EntityState.Added"/> state such that it will
 		/// be added to the remote repository when <see cref="IDataContextImpl.SaveChanges"/> is called.
 		/// </summary>
@@ -169,6 +157,7 @@ namespace PD.Base.EntityRepository.Api
 
 		public abstract string Name { get; }
 		public abstract void ClearLocal();
+		public abstract Type EntityType { get; }
 
 		public abstract IEnumerator<TEntity> GetEnumerator();
 

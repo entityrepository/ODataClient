@@ -28,6 +28,11 @@ namespace PD.Base.EntityRepository.Api
 		/// </summary>
 		void ClearLocal();
 
+		/// <summary>
+		/// Returns the entity <see cref="Type"/> for this repository.
+		/// </summary>
+		Type EntityType { get; }
+
 	}
 
 
@@ -49,6 +54,16 @@ namespace PD.Base.EntityRepository.Api
 		public void ClearLocal()
 		{
 			throw new NotImplementedException();
+		}
+
+		public Type EntityType
+		{
+			get
+			{
+				Contract.Ensures(null != Contract.Result<Type>());
+
+				throw new NotImplementedException();
+			}
 		}
 
 		#endregion

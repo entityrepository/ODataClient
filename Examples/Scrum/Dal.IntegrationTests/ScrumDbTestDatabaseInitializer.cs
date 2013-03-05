@@ -76,6 +76,24 @@ namespace Scrum.Dal.IntegrationTests
 			item1.AffectsVersions.Add(version020);
 			item1.TimeLog.Add(new WorkItemTimeLog() { Worker = gailUser, TimeWorked = new TimeSpan(1, 20, 0), Comments = "Initial investigation." });
 
+
+			Project dwProject = scrumDb.Projects.Create();
+			dwProject.Key = "DW";
+			dwProject.Name = "Data Warehouse";
+			dwProject.Description = "Data Warehouse and BI development";
+			dwProject.Owners.Add(gailUser);
+			scrumDb.Projects.Add(dwProject);
+
+			dwProject.Areas.Add(new ProjectArea() { Name = "Staging" });
+			dwProject.Areas.Add(new ProjectArea() { Name = "Presentation" });
+			ProjectArea reportingArea = new ProjectArea() { Name = "Reporting" };
+			reportingArea.Owners.Add(joeUser);
+			dwProject.Areas.Add(reportingArea);
+
+			dwProject.Versions.Add(new ProjectVersion() { Name = "0.8.1" });
+			dwProject.Versions.Add(new ProjectVersion() { Name = "1.0" });
+			dwProject.Versions.Add(new ProjectVersion() { Name = "Backlog" });
+
 			scrumDb.SaveChanges();
 		}
 

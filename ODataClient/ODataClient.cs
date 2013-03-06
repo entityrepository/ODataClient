@@ -118,6 +118,30 @@ namespace PD.Base.EntityRepository.ODataClient
 			_baseUriWithSlash = uriBuilder.Uri;
 		}
 
+		/// <summary>
+		/// Creates and begins initialization of this <see cref="ODataClient"/>
+		/// </summary>
+		/// <param name="serviceRoot">The <see cref="Uri"/> to the OData service.</param>
+		/// <param name="representativeEntityTypes">Representative types to remote via odata - at least one type from each namespace and assembly must be included.</param>
+		public ODataClient(Uri serviceRoot, params Type[] representativeEntityTypes)
+		{
+			Contract.Requires<ArgumentNullException>(serviceRoot != null);
+			Contract.Requires<ArgumentNullException>(representativeEntityTypes != null);
+
+			_entityAssemblies = new HashSet<Assembly>(representativeEntityTypes.Select(type => type.Assembly));
+			_entityTypeNamespaces = new HashSet<string>(representativeEntityTypes.Select(type => type.Namespace));
+			_dataServiceContext = new CustomDataServiceContext(serviceRoot, this);
+			_initializeTask = BeginInitializeTask();
+
+			// Build _baseUriWithSlash
+			UriBuilder uriBuilder = new UriBuilder(_dataServiceContext.BaseUri);
+			if ((uriBuilder.Path.Length > 0) && !uriBuilder.Path.EndsWith("/"))
+			{
+				uriBuilder.Path += "/";
+			}
+			_baseUriWithSlash = uriBuilder.Uri;
+		}
+
 		internal DataServiceContext DataServiceContext
 		{
 			get { return _dataServiceContext; }

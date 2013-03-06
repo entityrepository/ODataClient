@@ -26,12 +26,8 @@ namespace Scrum.Web.IntegrationTests
 	internal class ScrumClient : DataContext
 	{
 
-		private static readonly Type s_modelType = typeof(Project);
-		private static readonly Assembly[] s_entityAssemblies = new[] { s_modelType.Assembly };
-		private static readonly string[] s_entityNamespaces = new[] { s_modelType.Namespace };
-
 		public ScrumClient(string scrumServiceUrl)
-			: base(new ODataClient(new Uri(scrumServiceUrl), s_entityAssemblies, s_entityNamespaces), DataContextExtensions.SynchronousPreLoadDbEnums)
+			: base(new ODataClient(new Uri(scrumServiceUrl), typeof(Project)), DataContextExtensions.SynchronousPreLoadDbEnums)
 		{}
 
 		public IEditRepository<Project> Projects { get; private set; }

@@ -30,7 +30,6 @@ namespace PD.Base.EntityRepository.Api
 #pragma warning restore 1574
 	public interface IDataContextImpl
 	{
-
 		/// <summary>
 		/// Returns a task that signals when initialization of the <see cref="IDataContextImpl"/> is complete.
 		/// </summary>

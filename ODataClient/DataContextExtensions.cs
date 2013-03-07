@@ -39,9 +39,16 @@ namespace PD.Base.EntityRepository.ODataClient
 			Action<IEnumerable> dbEnumTypeInitializer =
 				enumerable =>
 				{
-					foreach (dynamic dbEnumValue in enumerable)
+					try
 					{
-						DbEnumManager.RegisterDbEnumValue(dbEnumValue);
+						foreach (dynamic dbEnumValue in enumerable)
+						{
+							DbEnumManager.RegisterDbEnumValue(dbEnumValue);
+						}
+					}
+					catch (Exception ex)
+					{
+						// Log(ex, "While preloading DbEnums");
 					}
 				};
 			return PreLoadEntitiesDerivedFrom(dataContext, typeof(DbEnum<,>), dbEnumTypeInitializer);

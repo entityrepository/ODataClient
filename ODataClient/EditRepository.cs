@@ -21,16 +21,21 @@ namespace PD.Base.EntityRepository.ODataClient
 		where TEntity : class
 	{
 
-		private readonly DataServiceCollection<TEntity> _dataServiceCollection;
+		//private readonly DataServiceCollection<TEntity> _dataServiceCollection;
 		private readonly ReadOnlyObservableCollection<TEntity> _readOnlyLocalCollection;
 
 		internal EditRepository(ODataClient odataClient, string entitySetName)
 			: base(odataClient, entitySetName)
 		{
-			// Provides change-tracking of INotifyPropertyChanged objects
-			_dataServiceCollection = new DataServiceCollection<TEntity>(DataServiceContext);
+			// TODO: Either change DbEnum<T, TId> to be DbEnum<TId, T>, or change it to be DbEnum<T> (with extension methods), 
+			// TODO: or write my own replacement for DataServiceCollection to implement change-tracking.
+			// Reason: System.Data.Services.Client.BindingEntityInfo.IsDataServiceCollection(typeof(T<T>), ...) causes a StackOverflowException
+			// calling System.Data.Services.Client.BindingEntityInfo.IsEntityType(typeof(T<T>)) and recursing forever.
 
-			_readOnlyLocalCollection = new ReadOnlyObservableCollection<TEntity>(_dataServiceCollection);
+			// Provides change-tracking of INotifyPropertyChanged objects
+			//_dataServiceCollection = new DataServiceCollection<TEntity>(DataServiceContext);
+
+			_readOnlyLocalCollection = new ReadOnlyObservableCollection<TEntity>(new ObservableCollection<TEntity>()); //_dataServiceCollection);
 		}
 
 		#region BaseRepository<TEntity>
@@ -42,7 +47,7 @@ namespace PD.Base.EntityRepository.ODataClient
 			lock (this)
 			{
 				// TODO: Support deduping by Id, if not done by DataServiceCollection?
-				_dataServiceCollection.Load(array);
+				//_dataServiceCollection.Load(array);
 			}
 			return array;
 		}
@@ -56,7 +61,7 @@ namespace PD.Base.EntityRepository.ODataClient
 		{
 			lock (this)
 			{
-				_dataServiceCollection.Clear(true);
+				//_dataServiceCollection.Clear(true);
 			}
 		}
 
@@ -67,7 +72,7 @@ namespace PD.Base.EntityRepository.ODataClient
 		public TEntity Add(TEntity entity)
 		{
 			DataServiceContext.AddObject(Name, entity);
-			_dataServiceCollection.Add(entity);
+			//_dataServiceCollection.Add(entity);
 			return entity;
 		}
 

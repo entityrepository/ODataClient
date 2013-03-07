@@ -107,7 +107,6 @@ namespace PD.Base.EntityRepository.ODataClient
 			_entityAssemblies = new HashSet<Assembly>(entityAssemblies);
 			_entityTypeNamespaces = new HashSet<string>(entityTypeNamespaces);
 			_dataServiceContext = new CustomDataServiceContext(serviceRoot, this);
-			_initializeTask = BeginInitializeTask();
 
 			// Build _baseUriWithSlash
 			UriBuilder uriBuilder = new UriBuilder(_dataServiceContext.BaseUri);
@@ -116,6 +115,8 @@ namespace PD.Base.EntityRepository.ODataClient
 				uriBuilder.Path += "/";
 			}
 			_baseUriWithSlash = uriBuilder.Uri;
+
+			_initializeTask = BeginInitializeTask();
 		}
 
 		/// <summary>
@@ -131,7 +132,6 @@ namespace PD.Base.EntityRepository.ODataClient
 			_entityAssemblies = new HashSet<Assembly>(representativeEntityTypes.Select(type => type.Assembly));
 			_entityTypeNamespaces = new HashSet<string>(representativeEntityTypes.Select(type => type.Namespace));
 			_dataServiceContext = new CustomDataServiceContext(serviceRoot, this);
-			_initializeTask = BeginInitializeTask();
 
 			// Build _baseUriWithSlash
 			UriBuilder uriBuilder = new UriBuilder(_dataServiceContext.BaseUri);
@@ -140,6 +140,8 @@ namespace PD.Base.EntityRepository.ODataClient
 				uriBuilder.Path += "/";
 			}
 			_baseUriWithSlash = uriBuilder.Uri;
+
+			_initializeTask = BeginInitializeTask();
 		}
 
 		internal DataServiceContext DataServiceContext
@@ -358,8 +360,7 @@ namespace PD.Base.EntityRepository.ODataClient
 		{
 			if (! InitializeTask.IsCompleted)
 			{
-				// REVIEW: Make the timeout a ctor parameter?
-				InitializeTask.Wait(); //60000);
+				throw new InitializationException("ODataClient initialization has not completed.");
 			}
 
 			if (InitializeTask.Status != TaskStatus.RanToCompletion)

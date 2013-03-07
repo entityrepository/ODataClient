@@ -197,9 +197,9 @@ namespace PD.Base.EntityRepository.Api
 			{
 				throw new ArgumentException(propertySelector + " must select a Property of the current DataContext subclass");
 			}
-			if (propertyInfo.PropertyType != typeof(IEditRepository<TEntity>))
+			if (propertyInfo.PropertyType != typeof(IReadOnlyRepository<TEntity>))
 			{
-				throw new ArgumentException(propertySelector + " must select a Property of type IEditRepository<TEntity>");
+				throw new ArgumentException(propertySelector + " must select a Property of type IReadOnlyRepository<TEntity>");
 			}
 
 			return DataContextImpl.ReadOnly<TEntity>(propertyInfo.Name);
@@ -212,8 +212,7 @@ namespace PD.Base.EntityRepository.Api
 		{
 			if (! InitializeTask.IsCompleted)
 			{
-				// REVIEW: Make the timeout a ctor parameter?
-				InitializeTask.Wait(); //60000);
+				throw new InitializationException("Initialization has not completed.");
 			}
 
 			if (InitializeTask.Status != TaskStatus.RanToCompletion)
@@ -322,14 +321,14 @@ namespace PD.Base.EntityRepository.Api
 		/// <returns>A task that can be used to track completion of pre-loading.</returns>
 		public static Task PreLoad(DataContext dataContext, Predicate<Type> typeSelector, Action<IEnumerable> perResultInitializer = null)
 		{
-			// Build repository.All queries for each type that matches typeSelector
+			// Obtain repository.All queries for each type that matches typeSelector
 			List<IRequest> queries = new List<IRequest>();
 			foreach (IRepository repository in dataContext.Repositories)
 			{
 				if (typeSelector(repository.EntityType))
 				{
-					// query = repository.All; // using reflection b/c .All is on a generic subclass
-					IRequest query = (IRequest) repository.GetType().GetProperty("All").GetValue(repository, null);
+					// query = repository.All; // using reflection b/c .All is on a generic interface
+					IRequest query = (IRequest) typeof(IRepository<>).MakeGenericType(repository.EntityType).GetProperty("All").GetValue(repository, null);
 					queries.Add(query);
 				}
 			}
@@ -344,8 +343,12 @@ namespace PD.Base.EntityRepository.Api
 			return dataContext.DataContextImpl.InvokeAsync(queries.ToArray()).ContinueWith(
 				completion =>
 				{
+					if (completion.IsFaulted)
+					{
+						// Log(completion.GetException(), "Error occurred while PreLoading...");
+					}
 					// If action is provided, allow post query intialization
-					if (perResultInitializer != null)
+					else if (perResultInitializer != null)
 					{
 						foreach (object query in queries)
 						{

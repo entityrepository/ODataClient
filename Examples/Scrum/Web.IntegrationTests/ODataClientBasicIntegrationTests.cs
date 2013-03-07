@@ -33,7 +33,7 @@ namespace Scrum.Web.IntegrationTests
 
 			// REVIEW: We should require that this is called before any repository properties are accessed.  But that's somewhat difficult to do,
 			// so for now, we have to wait for initialization to complete.
-			_client.EnsureInitializationCompleted();
+			Assert.True(_client.InitializeTask.Wait(TestTimeout));
 		}
 
 		[Fact]

@@ -46,8 +46,9 @@ namespace PD.Base.EntityRepository.ODataClient
 							DbEnumManager.RegisterDbEnumValue(dbEnumValue);
 						}
 					}
-					catch (Exception ex)
+					catch (Exception)// ex)
 					{
+						// TODO: Add logging support
 						// Log(ex, "While preloading DbEnums");
 					}
 				};

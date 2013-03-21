@@ -97,6 +97,41 @@ namespace Scrum.Web.IntegrationTests
 		}
 
 		[Fact]
+		public void TestAsynchronousNestedInclude()
+		{
+			var query = _client.WorkItems.Include(wi => wi.Areas.Include(a => a.Owners))
+							   .Include(wi => wi.TimeLog.Include(tl => tl.Worker))
+			                   .Include(wi => wi.Project.Include(p => p.Areas.Include(a => a.Owners)).Include(p => p.Versions))
+			                   .Include(wi => wi.Subscribers)
+			                   .Include(wi => wi.AssignedTo);
+			WorkItem workItem = null;
+			var queryCompletion = _client.InvokeAsync(query);
+			var completion = queryCompletion.ContinueWith(
+												   task =>
+												   {
+													   Assert.True(task.IsCompleted);
+													   workItem = query.First();
+												   });
+			completion.Wait(TestTimeout);
+
+			Assert.NotNull(workItem);
+			Assert.True(workItem.Areas.Any(a => a.Owners.Any()));
+			Assert.NotEmpty(workItem.TimeLog);
+			Assert.True(workItem.TimeLog.All(tl => tl.Worker != null));
+			Assert.True(workItem.Project.Areas.Any(a => a.Owners.Any()));
+			Assert.NotEmpty(workItem.Project.Versions);
+			Assert.NotEmpty(workItem.Subscribers);
+			Assert.NotEmpty(workItem.AssignedTo);
+		}
+
+		[Fact]
+		public void BadIncludeExpressionThrows()
+		{
+			// The expression doesn't include a property selector, so it should throw
+			Assert.Throws<InvalidOperationException>(() => _client.WorkItems.Include<WorkItem, ProjectArea>(wi => new ProjectArea()));
+		}
+
+		[Fact(Skip = "Change tracking nyi")]
 		public void TestPropertyChangeTracking()
 		{
 			_client.Clear().Wait(TestTimeout);
@@ -137,7 +172,7 @@ namespace Scrum.Web.IntegrationTests
 			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
 		}
 
-		[Fact]
+		[Fact(Skip = "Change tracking nyi")]
 		public void TestOneToOneRelationshipChangeTracking()
 		{
 			// Setup
@@ -169,8 +204,8 @@ namespace Scrum.Web.IntegrationTests
 			// Cleanup
 			_client.WorkItems.ClearLocal();
 		}
-		
-		[Fact]
+
+		[Fact(Skip = "Change tracking nyi")]
 		public void TestOneToManyRelationshipChangeTracking()
 		{
 			_client.Clear().Wait(TestTimeout);

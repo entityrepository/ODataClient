@@ -42,6 +42,7 @@ namespace Scrum.Dal.IntegrationTests
 
 			infraProject.Areas.Add(new ProjectArea() { Name = "Configuration" });
 			ProjectArea loggingArea = new ProjectArea() { Name = "Logging" };
+			loggingArea.Owners.Add(gailUser);
 			infraProject.Areas.Add(loggingArea);
 			ProjectArea sourceControlArea = new ProjectArea() { Name = "Source Control" };
 			sourceControlArea.Owners.Add(joeUser);

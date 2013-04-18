@@ -115,7 +115,7 @@
   <ItemGroup>
     <Reference Include="mscorlib" />
     <Reference Include="PD.Base.PortableUtil">
-      <HintPath>$(PackagesDir)\PD.Base.PortableUtil.1.1.0.2147-debug\lib\portable-net403+sl50\PD.Base.PortableUtil.dll</HintPath>
+      <HintPath>$(PackagesDir)\PD.Base.PortableUtil.1.1.0.2361-debug\lib\portable-net403+sl50\PD.Base.PortableUtil.dll</HintPath>
     </Reference>
     <Reference Include="System.ComponentModel.DataAnnotations, Version=5.0.5.0, Culture=neutral, PublicKeyToken=ddd0da4d3e678217, processorArchitecture=MSIL">
       <Private>False</Private>
@@ -147,7 +147,9 @@
     <None Include="FodyWeavers.xml" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Silverlight\$(SilverlightVersion)\Microsoft.Silverlight.CSharp.targets" />
   <ProjectExtensions>

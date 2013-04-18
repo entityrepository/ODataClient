@@ -13,7 +13,7 @@ namespace Scrum.Model
 	/// <summary>
 	/// The status of a work item.
 	/// </summary>
-	public class Status : NamedDbEnum<short, Status> // : IFreezable
+	public class Status : NamedDbEnum<short, Status>
 	{
 
 		/// <summary>

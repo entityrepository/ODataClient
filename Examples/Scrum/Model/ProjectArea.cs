@@ -12,7 +12,7 @@ namespace Scrum.Model
 {
 
 
-	public class ProjectArea : BaseEntity
+	public class ProjectArea : BaseEntity<int, ProjectArea>
 	{
 		#region Fields
 
@@ -22,8 +22,6 @@ namespace Scrum.Model
 
 		[StringLength(512)]
 		public string Description { get; set; }
-
-		public int ID { get; set; }
 
 		[Required]
 		[StringLength(100, MinimumLength = 2)]

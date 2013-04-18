@@ -12,20 +12,22 @@ namespace Scrum.Model
 {
 
 
-	public class WorkItemMessage : BaseEntity
+	public class WorkItemMessage : BaseEntity<long, WorkItemMessage>
 	{
-
-		public long ID { get; set; }
-
-		public int WorkItemID { get; set; }
 
 		[Required]
 		public WorkItem WorkItem { get; set; }
+		public int WorkItemID { get; set; }
 
 		[Required]
 		public User Author { get; set; }
 
+		[Required]
+		public string Message { get; set; }
+
+		[Required]
 		public DateTime Created { get; set; }
+
 		public DateTime? LastUpdated { get; set; }
 
 	}

@@ -8,6 +8,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data.Services.Client;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Linq;
@@ -30,6 +31,7 @@ namespace PD.Base.EntityRepository.ODataClient
 	/// simplest to do so.  If the IQueryProvider weren't the same class, there would be a 1-1 relationship between queryprovider and queryable, and
 	/// they'd continually be passing state back and forth.
 	/// </remarks>
+	[DebuggerDisplay("{_dataServiceQuery}")]
 	internal class ODataClientQuery<TEntity> : ODataClientRequest, IQueryRequest<TEntity>, IQueryProvider
 	{
 		/// <summary>
@@ -196,14 +198,24 @@ namespace PD.Base.EntityRepository.ODataClient
 
 		internal override void HandleResponse(ODataClient client, OperationResponse operationResponse)
 		{
-			IEnumerable<TEntity> results = operationResponse as IEnumerable<TEntity>;
-			if (results == null)
-			{
-				throw new InvalidOperationException("Expected results from " + operationResponse + " to be IEnumerable<" + typeof(TEntity) + ">.");
-			}
-			IEnumerable<TEntity> processedResults = client.ProcessQueryResults(results);
-			_results = processedResults.ToArray();
 			base.HandleResponse(client, operationResponse);
+			if (base.IsCompletedSuccessfully)
+			{
+				try
+				{
+					IEnumerable<TEntity> results = operationResponse as IEnumerable<TEntity>;
+					if (results == null)
+					{
+						throw new InvalidOperationException("Expected results from " + operationResponse + " to be IEnumerable<" + typeof(TEntity) + ">.");
+					}
+					IEnumerable<TEntity> processedResults = client.ProcessQueryResults(results);
+					_results = processedResults.ToArray();
+				}
+				catch (Exception ex)
+				{
+					base.Failed(ex);
+				}
+			}
 		}
 
 		#endregion

@@ -70,7 +70,7 @@ namespace PD.Base.EntityRepository.ODataClient
 		/// Failed with an exception before a response could be received.
 		/// </summary>
 		/// <param name="exception"></param>
-		internal virtual void CommunicationsFailure(Exception exception)
+		internal virtual void Failed(Exception exception)
 		{
 			_requestState = RequestState.CompletedWithError;
 			Exception = exception;

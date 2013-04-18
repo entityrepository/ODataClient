@@ -6,23 +6,22 @@
 
 using System;
 using System.ComponentModel.DataAnnotations;
+using Scrum.Model.Base;
 
 namespace Scrum.Model
 {
 
-	public class WorkItemPropertyChange
+	public class WorkItemPropertyChange : BaseEntity<long, WorkItemPropertyChange>
 	{
-
-		public long ID { get; set; }
-
-		public int WorkItemID { get; set; }
 
 		[Required]
 		public WorkItem WorkItem { get; set; }
+		public int WorkItemID { get; set; }
 
 		[Required]
 		public User Author { get; set; }
 
+		[Required]
 		public DateTime ChangeDateTime { get; set; }
 
 		[Required, StringLength(64, MinimumLength = 2)]

@@ -89,8 +89,8 @@ namespace PD.Base.EntityRepository.Api
 		/// Returns this repository's <see cref="EntityState"/> for <paramref name="entity"/>.
 		/// </summary>
 		/// <param name="entity">An entity.</param>
-		/// <returns>The current <see cref="EntityState"/> for <paramref name="entity"/>; or <c>null</c> if <c>entity</c> is not in the local collection.</returns>
-		EntityState? GetEntityState(TEntity entity);
+		/// <returns>The current <see cref="EntityState"/> for <paramref name="entity"/>.</returns>
+		EntityState GetEntityState(TEntity entity);
 
 	}
 
@@ -141,7 +141,7 @@ namespace PD.Base.EntityRepository.Api
 			throw new NotImplementedException();
 		}
 
-		public EntityState? GetEntityState(TEntity entity)
+		public EntityState GetEntityState(TEntity entity)
 		{
 			throw new NotImplementedException();
 		}

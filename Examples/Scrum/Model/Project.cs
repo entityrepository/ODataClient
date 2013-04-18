@@ -13,7 +13,7 @@ namespace Scrum.Model
 {
 
 
-	public class Project : BaseEntity
+	public class Project : BaseEntity<int, Project>
 	{
 		#region Fields
 
@@ -25,8 +25,6 @@ namespace Scrum.Model
 		private ICollection<WorkItem> _workItems;
 
 		#endregion
-
-		public int ID { get; set; }
 
 		[StringLength(20, MinimumLength = 1)]
 		public string Key

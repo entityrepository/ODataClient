@@ -16,11 +16,13 @@ using System.Reflection;
 using System.ServiceModel;
 using System.Threading.Tasks;
 using System.Xml;
+using System.Xml.Linq;
 using Microsoft.Data.Edm;
 using Microsoft.Data.Edm.Csdl;
 using Microsoft.Data.Edm.Validation;
 using PD.Base.EntityRepository.Api;
 using PD.Base.EntityRepository.Api.Exceptions;
+using PD.Base.PortableUtil.Model;
 
 namespace PD.Base.EntityRepository.ODataClient
 {
@@ -107,6 +109,8 @@ namespace PD.Base.EntityRepository.ODataClient
 			_entityAssemblies = new HashSet<Assembly>(entityAssemblies);
 			_entityTypeNamespaces = new HashSet<string>(entityTypeNamespaces);
 			_dataServiceContext = new CustomDataServiceContext(serviceRoot, this);
+			_dataServiceContext.WritingEntity += OnWritingEntity;
+			_dataServiceContext.ReadingEntity += OnReadingEntity;
 
 			// Build _baseUriWithSlash
 			UriBuilder uriBuilder = new UriBuilder(_dataServiceContext.BaseUri);
@@ -274,7 +278,13 @@ namespace PD.Base.EntityRepository.ODataClient
 		/// <inheritdoc />
 		public Task SaveChanges()
 		{
-			throw new NotImplementedException();
+			ValidateChangedEntities();
+
+			Task<DataServiceResponse> taskResponse =
+				Task.Factory.FromAsync<DataServiceResponse>((callback, state) => _dataServiceContext.BeginSaveChanges(SaveChangesOptions.Batch, callback, state),
+				                                            _dataServiceContext.EndSaveChanges,
+				                                            null); // state == null for now...
+			return taskResponse.ContinueWith(ProcessSaveChangesResponse);
 		}
 
 		/// <inheritdoc />
@@ -496,38 +506,102 @@ namespace PD.Base.EntityRepository.ODataClient
 
 		private ReadOnlyCollection<IRequest> ProcessBatchResponse(Task<DataServiceResponse> responseTask)
 		{
-			// Extract the requests from the state property
+			// Extract the requests from the async state property
 			ODataClientRequest[] internalRequests = (ODataClientRequest[]) responseTask.AsyncState;
 
-			DataServiceResponse batchResponse = responseTask.Result;
-
-			try
+			// batchException is an exception that affects all requests in the batch
+			Exception batchException = null;
+			if (responseTask.IsFaulted)
 			{
-				// Check for failures that affect all requests in the batch
-				if (!batchResponse.IsBatchResponse)
+				batchException = responseTask.GetException();
+			}
+			else
+			{
+				DataServiceResponse batchResponse = responseTask.Result;
+				try
 				{
-					throw new CommunicationException("OData communications error - expected batch response, but received non-batch  " + batchResponse);
+					// Check for failures that affect all requests in the batch
+					if (!batchResponse.IsBatchResponse)
+					{
+						throw new CommunicationException("OData communications error - expected batch response, but received non-batch  " + batchResponse);
+					}
+					if ((batchResponse.BatchStatusCode < 200)
+					    || (batchResponse.BatchStatusCode > 299))
+					{
+						throw new CommunicationException("OData communications error - batch call returned batch status code " + batchResponse.BatchStatusCode);
+					}
+
+					foreach (OperationResponse operationResponse in batchResponse)
+					{
+						ODataClientRequest request = internalRequests.Single(req => req.IsRequestFor(operationResponse));
+						request.HandleResponse(this, operationResponse);
+					}
 				}
-				if ((batchResponse.BatchStatusCode < 200)
-				    || (batchResponse.BatchStatusCode > 299))
+				catch (CommunicationException comEx)
 				{
-					throw new CommunicationException("OData communications error - batch call returned batch status code " + batchResponse.BatchStatusCode);
+					batchException = comEx;
 				}
 			}
-			catch (CommunicationException comEx)
+
+			if (batchException != null)
 			{
 				foreach (ODataClientRequest oDataClientRequest in internalRequests)
 				{
-					oDataClientRequest.CommunicationsFailure(comEx);
+					oDataClientRequest.Failed(batchException);
 				}
 			}
 
-			foreach (OperationResponse operationResponse in batchResponse)
-			{
-				ODataClientRequest request = internalRequests.Single(req => req.IsRequestFor(operationResponse));
-				request.HandleResponse(this, operationResponse);
-			}
 			return new ReadOnlyCollection<IRequest>(internalRequests);
+		}
+
+		private void ValidateChangedEntities()
+		{
+			List<Exception> validationExceptions = new List<Exception>();
+			foreach (EntityDescriptor entityDescriptor in _dataServiceContext.Entities)
+			{
+				EntityStates state = entityDescriptor.State;
+				if ((EntityStates.Added == (state & EntityStates.Added)) || (EntityStates.Modified == (state & EntityStates.Modified)))
+				{
+					IValidatable validatable = entityDescriptor.Entity as IValidatable;
+					if (validatable != null)
+					{
+						try
+						{
+							validatable.Validate();							
+						}
+						catch (Exception vex)
+						{
+							validationExceptions.Add(vex);
+						}
+					}
+				}				
+			}
+
+			if (validationExceptions.Count > 0)
+			{
+				throw new AggregateException("One or more added or modified entities failed validation.", validationExceptions);
+			}			
+		}
+
+		private void ProcessSaveChangesResponse(Task<DataServiceResponse> responseTask)
+		{
+			DataServiceResponse batchResponse = responseTask.Result;
+			// Check for failures that affect all requests in the batch
+			if (!batchResponse.IsBatchResponse)
+			{
+				throw new CommunicationException("OData communications error - expected batch response, but received non-batch  " + batchResponse);
+			}
+			if ((batchResponse.BatchStatusCode < 200)
+				|| (batchResponse.BatchStatusCode > 299))
+			{
+				throw new CommunicationException("OData communications error - batch call returned batch status code " + batchResponse.BatchStatusCode);
+			}
+
+			foreach (ChangeOperationResponse changeResponse in batchResponse)
+			{
+				// Log(changeResponse.Error);
+				// Log("Object updated: " + changeResponse.Descriptor);				
+			}
 		}
 
 		internal IEnumerable<TEntity> ProcessQueryResults<TEntity>(IEnumerable<TEntity> results)
@@ -548,6 +622,41 @@ namespace PD.Base.EntityRepository.ODataClient
 			return baseRepository.ProcessQueryResults(results);
 		}
 
+		private void OnWritingEntity(object sender, ReadingWritingEntityEventArgs e)
+		{
+			// Find the repository for the entity by type
+			// TODO: This may break for inheritance; TEST!
+			IRepository repository;
+			_cacheRepositoryForType.TryGetValue(e.Entity.GetType(), out repository);
+			EntityTypeInfo entityTypeInfo = repository as EntityTypeInfo;
+			if (entityTypeInfo != null)
+			{
+				// Remove any properties that shouldn't be serialized.
+				if (entityTypeInfo.DontSerializeProperties.Length > 0)
+				{
+					XNamespace mNamespace = e.Data.GetNamespaceOfPrefix("m");
+					XNamespace dNamespace = e.Data.GetNamespaceOfPrefix("d");
+					if ((mNamespace != null) && (dNamespace != null))
+					{
+						XElement nodeProperties = e.Data.Descendants(mNamespace.GetName("properties")).FirstOrDefault();
+						if (nodeProperties != null)
+						{
+							foreach (var propertyInfo in entityTypeInfo.DontSerializeProperties)
+							{
+								nodeProperties.Descendants(dNamespace.GetName(propertyInfo.Name)).Remove();	
+							}							
+						}
+					}
+				}
+			}
+		}
+
+		private void OnReadingEntity(object sender, ReadingWritingEntityEventArgs e)
+		{
+			object entity = e.Entity;
+			Uri uri = e.BaseUri;
+		}
+
 		#region Nested type: CustomDataServiceContext
 
 		/// <summary>
@@ -555,7 +664,11 @@ namespace PD.Base.EntityRepository.ODataClient
 		/// </summary>
 		internal class CustomDataServiceContext : DataServiceContext
 		{
-
+			/// <summary>
+			/// Creates a new <see cref="CustomDataServiceContext"/>.
+			/// </summary>
+			/// <param name="serviceRoot"></param>
+			/// <param name="client"></param>
 			public CustomDataServiceContext(Uri serviceRoot, ODataClient client)
 				: base(serviceRoot, DataServiceProtocolVersion.V3)
 			{

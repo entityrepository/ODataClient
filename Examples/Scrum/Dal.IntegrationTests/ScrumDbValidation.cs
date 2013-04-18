@@ -30,7 +30,7 @@ namespace Scrum.Dal.IntegrationTests
 			{
 				try
 				{
-					User user = new User { UserID = Guid.NewGuid().ToString(), Email = "test@domain.com" };
+					User user = new User { UserName = Guid.NewGuid().ToString(), Email = "test@domain.com" };
 
 					scrumDb.Users.Add(user);
 					scrumDb.SaveChanges();

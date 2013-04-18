@@ -12,12 +12,10 @@ namespace Scrum.Model
 {
 
 
-	public class Sprint : BaseEntity
+	public class Sprint : BaseEntity<int, Sprint>
 	{
 
 		public DateTime? EndDate { get; set; }
-
-		public int ID { get; set; }
 
 		[StringLength(64)]
 		public string Name { get; set; }

@@ -21,6 +21,9 @@ namespace Simple.Web
 
 		public DbSet<EqualityTestRecord> EqualityTestRecords { get; set; }
 
+		// Implied:
+		//public DbSet<EqualitySemantics> EqualitySemantics { get; set; }
+
 		protected override void OnModelCreating(DbModelBuilder modelBuilder)
 		{
 			modelBuilder.Entity<EqualityTestRecord>().Property(r => r.EqualityTestRecordID).HasColumnName("EqualityTestRecordId");

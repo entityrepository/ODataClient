@@ -15,6 +15,7 @@
     <CodeContractsAssemblyMode>1</CodeContractsAssemblyMode>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\..</SolutionDir>
     <RestorePackages>true</RestorePackages>
+    <FodyPath>$(PackagesDir)\Fody.1.13.6.1</FodyPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -100,19 +101,21 @@
     <CodeContractsAnalysisWarningLevel>0</CodeContractsAnalysisWarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <None Include="Fody.targets" />
     <None Include="packages.config" />
-    <Reference Include="PD.Base.PortableUtil, Version=1.1.0.2147, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="PD.Base.PortableUtil, Version=1.1.0.2361, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\packages\PD.Base.PortableUtil.1.1.0.2147-debug\lib\portable-net403+sl50\PD.Base.PortableUtil.dll</HintPath>
+      <HintPath>$(PackagesDir)\PD.Base.PortableUtil.1.1.0.2361-debug\lib\portable-net403+sl50\PD.Base.PortableUtil.dll</HintPath>
     </Reference>
     <Reference Include="PropertyChanged">
-      <HintPath>..\..\..\packages\PropertyChanged.Fody.1.33.1.0\lib\NET40\PropertyChanged.dll</HintPath>
+      <HintPath>$(PackagesDir)\PropertyChanged.Fody.1.36.2.3\lib\NET40\PropertyChanged.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Core" />
     <None Include="FodyWeavers.xml" />
+    <Reference Include="System.Runtime.Serialization" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Base\BaseEntity.cs" />

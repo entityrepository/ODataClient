@@ -8,8 +8,10 @@ using System;
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Data.Entity.Migrations;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection;
+using System.Transactions;
 using Scrum.Model;
 
 namespace Scrum.Dal.IntegrationTests
@@ -19,18 +21,48 @@ namespace Scrum.Dal.IntegrationTests
 	/// <summary>
 	/// <see cref="IDatabaseInitializer{TContext}"/> for an integration test instance of <see cref="ScrumDb"/>.
 	/// </summary>
-	public class ScrumDbTestDatabaseInitializer : DropCreateDatabaseIfModelChanges<ScrumDb>
+	public class ScrumDbTestDatabaseInitializer : IDatabaseInitializer<ScrumDb>
 	{
 
-		protected override void Seed(ScrumDb scrumDb)
+		// Modified from DropCreateDatabaseIfModelChanges<TContext>
+		// TODO: Move to Base.Data...
+		public void InitializeDatabase(ScrumDb context)
+		{
+			bool flag;
+			using (new TransactionScope(TransactionScopeOption.Suppress))
+			{
+				flag = context.Database.Exists();
+			}
+
+			if (flag)
+			{
+				try
+				{
+					if (context.Database.CompatibleWithModel(true))
+					{
+						return;
+					}
+				}
+				catch (NotSupportedException /*nse*/)
+				{} // Occurs when the last call to Database.Create didn't succeed; if this happens, try creating it again.
+
+				context.Database.Delete();
+			}
+
+			context.Database.Create();
+			this.Seed(context);
+			context.SaveChanges();
+		}
+
+		protected /*override*/ void Seed(ScrumDb scrumDb)
 		{
 			// Add DbEnum-like values
 			SeedStaticReadOnlyFieldValues<Priority>(scrumDb);
 			SeedStaticReadOnlyFieldValues<Status>(scrumDb);
 
-			User joeUser = new User() { UserID = "joe", Email = "joe@domain.com" };
+			User joeUser = new User() { UserName = "joe", Email = "joe@domain.com" };
 			scrumDb.Users.Add(joeUser);
-			User gailUser = new User() { UserID = "gail", Email = "gail@domain.com" };
+			User gailUser = new User() { UserName = "gail", Email = "gail@domain.com" };
 			scrumDb.Users.Add(gailUser);
 
 			Project infraProject = scrumDb.Projects.Create();
@@ -61,7 +93,7 @@ namespace Scrum.Dal.IntegrationTests
 
 			WorkItem item1 = new WorkItem()
 			                 {
-				                 Number = 1,
+				                 //Number = 1,
 				                 Title = "Some log entries are logged twice",
 				                 Creator = gailUser,
 				                 Created = new DateTime(2013, 1, 12),

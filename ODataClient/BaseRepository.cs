@@ -19,7 +19,7 @@ namespace PD.Base.EntityRepository.ODataClient
 	/// <summary>
 	/// Common repository functionality between edit and readonly repositories.
 	/// </summary>
-	internal abstract class BaseRepository<TEntity> : IRepository<TEntity>
+	internal abstract class BaseRepository<TEntity> : EntityTypeInfo, IRepository<TEntity>
 	{
 		// The parent ODataClient
 		private readonly ODataClient _odataClient;
@@ -28,6 +28,7 @@ namespace PD.Base.EntityRepository.ODataClient
 
  
 		internal BaseRepository(ODataClient odataClient, string entitySetName)
+			: base(typeof(TEntity))
 		{
 			Name = entitySetName;
 			_odataClient = odataClient;
@@ -60,11 +61,6 @@ namespace PD.Base.EntityRepository.ODataClient
 		public string Name { get; private set; }
 
 		public abstract void ClearLocal();
-
-		public Type EntityType
-		{
-			get { return typeof(TEntity); }
-		}
 
 		#endregion
 

@@ -11,11 +11,8 @@ namespace Scrum.Model
 {
 
 
-	public class User : BaseEntity
+	public class User : BaseEntity<int, User>
 	{
-
-		[Key]
-		public int UserNumber { get; set; }
 
 		[Required]
 		[DataType(DataType.EmailAddress)]
@@ -23,7 +20,7 @@ namespace Scrum.Model
 
 		[Required]
 		[StringLength(40, MinimumLength = 3)]
-		public string UserID { get; set; }
+		public string UserName { get; set; }
 
 	}
 }

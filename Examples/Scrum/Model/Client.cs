@@ -11,10 +11,8 @@ namespace Scrum.Model
 {
 
 
-	public class Client : BaseEntity
+	public class Client : BaseEntity<int, Client>
 	{
-
-		public int ID { get; set; }
 
 		[Required]
 		[StringLength(60, MinimumLength = 1)]

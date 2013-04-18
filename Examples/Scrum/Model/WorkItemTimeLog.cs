@@ -12,10 +12,8 @@ namespace Scrum.Model
 {
 
 
-	public class WorkItemTimeLog : BaseEntity
+	public class WorkItemTimeLog : BaseEntity<long, WorkItemTimeLog>
 	{
-
-		public long ID { get; set; }
 
 		[Required]
 		public WorkItem WorkItem { get; set; }

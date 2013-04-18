@@ -6,11 +6,12 @@
 
 
 using System;
+using System.Data.Services.Client;
+using PD.Base.EntityRepository.Api;
+using PD.Base.PortableUtil.Model;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using PD.Base.EntityRepository.Api;
-using PD.Base.PortableUtil.Model;
 
 namespace PD.Base.EntityRepository.ODataClient
 {
@@ -23,14 +24,20 @@ namespace PD.Base.EntityRepository.ODataClient
 		where TEntity : class
 	{
 
-		private readonly ObservableCollection<TEntity> _localCollection;
+		private readonly DataServiceCollection<TEntity> _dataServiceCollection;
 		private readonly ReadOnlyObservableCollection<TEntity> _readOnlyLocalCollection;
 
 		internal ReadOnlyRepository(ODataClient odataClient, string entitySetName)
 			: base(odataClient, entitySetName)
 		{
-			_localCollection = new ObservableCollection<TEntity>();
-			_readOnlyLocalCollection = new ReadOnlyObservableCollection<TEntity>(_localCollection);
+			_dataServiceCollection = new DataServiceCollection<TEntity>(DataServiceContext,
+			                                                            null,
+			                                                            TrackingMode.AutoChangeTracking,
+			                                                            entitySetName,
+			                                                            OnEntityChanged,
+			                                                            OnCollectionChanged);
+
+			_readOnlyLocalCollection = new ReadOnlyObservableCollection<TEntity>(_dataServiceCollection);
 		}
 
 		#region BaseRepository<TEntity>
@@ -49,8 +56,7 @@ namespace PD.Base.EntityRepository.ODataClient
 
 				lock (this)
 				{
-					// TODO: Support deduping by Id
-					_localCollection.Add(e);
+					_dataServiceCollection.Add(e);
 				}
 			}
 			return array;
@@ -65,11 +71,21 @@ namespace PD.Base.EntityRepository.ODataClient
 		{
 			lock (this)
 			{
-				_localCollection.Clear();
+				_dataServiceCollection.Clear(true);
 			}
 		}
 
 		#endregion		 
+
+		private bool OnCollectionChanged(EntityCollectionChangedParams arg)
+		{
+			throw new System.NotImplementedException();
+		}
+
+		private bool OnEntityChanged(EntityChangedParams arg)
+		{
+			throw new InvalidOperationException("Entities in a ReadOnlyRepository should not be modified: " + arg.Entity);
+		}
 
 	}
 }

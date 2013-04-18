@@ -21,7 +21,7 @@ namespace PD.Base.EntityRepository.ODataClient
 		where TEntity : class
 	{
 
-		//private readonly DataServiceCollection<TEntity> _dataServiceCollection;
+		private readonly DataServiceCollection<TEntity> _dataServiceCollection;
 		private readonly ReadOnlyObservableCollection<TEntity> _readOnlyLocalCollection;
 
 		internal EditRepository(ODataClient odataClient, string entitySetName)
@@ -33,9 +33,10 @@ namespace PD.Base.EntityRepository.ODataClient
 			// calling System.Data.Services.Client.BindingEntityInfo.IsEntityType(typeof(T<T>)) and recursing forever.
 
 			// Provides change-tracking of INotifyPropertyChanged objects
-			//_dataServiceCollection = new DataServiceCollection<TEntity>(DataServiceContext);
+			_dataServiceCollection = new DataServiceCollection<TEntity>(DataServiceContext, null, TrackingMode.AutoChangeTracking, entitySetName,
+				null, null); // REVIEW: Could provide entity changed and collection changed callbacks if needed
 
-			_readOnlyLocalCollection = new ReadOnlyObservableCollection<TEntity>(new ObservableCollection<TEntity>()); //_dataServiceCollection);
+			_readOnlyLocalCollection = new ReadOnlyObservableCollection<TEntity>(_dataServiceCollection);
 		}
 
 		#region BaseRepository<TEntity>
@@ -46,8 +47,7 @@ namespace PD.Base.EntityRepository.ODataClient
 
 			lock (this)
 			{
-				// TODO: Support deduping by Id, if not done by DataServiceCollection?
-				//_dataServiceCollection.Load(array);
+				_dataServiceCollection.Load(array);
 			}
 			return array;
 		}
@@ -61,7 +61,7 @@ namespace PD.Base.EntityRepository.ODataClient
 		{
 			lock (this)
 			{
-				//_dataServiceCollection.Clear(true);
+				_dataServiceCollection.Clear(true);
 			}
 		}
 
@@ -72,7 +72,7 @@ namespace PD.Base.EntityRepository.ODataClient
 		public TEntity Add(TEntity entity)
 		{
 			DataServiceContext.AddObject(Name, entity);
-			//_dataServiceCollection.Add(entity);
+			_dataServiceCollection.Add(entity);
 			return entity;
 		}
 
@@ -122,13 +122,13 @@ namespace PD.Base.EntityRepository.ODataClient
 			throw new NotImplementedException("Need to implement Revert(TEntity)");
 		}
 
-		public EntityState? GetEntityState(TEntity entity)
+		public EntityState GetEntityState(TEntity entity)
 		{
 			// Check the EntityDescriptor - tracks value property changes
 			EntityDescriptor entityDescriptor = DataServiceContext.GetEntityDescriptor(entity);
 			if (entityDescriptor == null)
 			{
-				return null;
+				return EntityState.Detached;
 			}
 
 			switch (entityDescriptor.State)
@@ -144,7 +144,7 @@ namespace PD.Base.EntityRepository.ODataClient
 				case EntityStates.Unchanged:
 					break;
 				default:
-					return null;
+					throw new InvalidOperationException("Unexpected EntityDescriptor.State: " + entityDescriptor.State);
 			}
 
 			// Check LinkDescriptors - tracks reference property changes

@@ -6,6 +6,7 @@
 
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data.Entity;
+using System.Data.Entity.ModelConfiguration.Conventions;
 using Scrum.Model;
 
 namespace Scrum.Dal
@@ -55,9 +56,18 @@ namespace Scrum.Dal
 			modelBuilder.Entity<ProjectArea>().HasMany(projectArea => projectArea.Owners).WithMany()
 			            .Map(manyToManyConfig => manyToManyConfig.ToTable("ProjectAreaOwners"));
 
+			modelBuilder.Entity<WorkItemMessage>().HasRequired(m => m.Author).WithOptional().WillCascadeOnDelete(false);
+
+			modelBuilder.Entity<WorkItemPropertyChange>().HasRequired(m => m.Author).WithOptional().WillCascadeOnDelete(false);
+
+			modelBuilder.Entity<WorkItemTimeLog>().HasRequired(l => l.Worker).WithOptional().WillCascadeOnDelete(false);
+
 			// For the DbEnum subclasses, turn off autoincrement so IDs of 0 (or flags) can work
 			modelBuilder.Entity<Priority>().Property(priority => priority.ID).HasDatabaseGeneratedOption(DatabaseGeneratedOption.None);
 			modelBuilder.Entity<Status>().Property(status => status.ID).HasDatabaseGeneratedOption(DatabaseGeneratedOption.None);
+
+			// Required, since there's no way to selectively disable many-to-many cascade delete.
+			modelBuilder.Conventions.Remove<ManyToManyCascadeDeleteConvention>();
 
 			// TODO: Iterate over all entity types and set the correct default schema
 			// TODO: Iterate over all entity types and set correct key names + mappings

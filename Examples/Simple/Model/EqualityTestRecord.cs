@@ -7,7 +7,6 @@
 
 using System;
 using System.ComponentModel;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Runtime.CompilerServices;
 
 namespace Simple.Model
@@ -19,6 +18,9 @@ namespace Simple.Model
 	/// </summary>
 	public class EqualityTestRecord : IEquatable<EqualityTestRecord>, INotifyPropertyChanged
 	{
+		// Ensures that once a hash code is returned for an instance, it is never changed.
+		private int _cachedEntityHashCode;
+
 		/// <summary>
 		/// REVIEW: Unfortunately <c>Id</c> is not possible due to bad code in <c>Microsoft.Data.Services.Client</c>.
 		/// </summary>
@@ -32,22 +34,13 @@ namespace Simple.Model
 		/// <summary>
 		/// What does equality mean for this object?
 		/// </summary>
-		/// <remarks>
-		/// This property is <c>[NotMapped]</c> b/c data services doesn't support enums.  EF 5.0 on .NET 4.5 does; but data services doesn't.
-		/// Instead, <see cref="EqualitySemanticId"/> was added to work with data services.
-		/// </remarks>
-		[NotMapped]
 		public EqualitySemantics EqualitySemantic { get; set; }
 
-		public byte EqualitySemanticId
-		{
-			get { return (byte) EqualitySemantic; }
-			set { EqualitySemantic = (EqualitySemantics) value; }
-		}
+		#region INotifyPropertyChanged
 
-		#region INotifyPropertyChange
-
+#pragma warning disable 67 // This property is used by Fody.PropertyChanged
 		public event PropertyChangedEventHandler PropertyChanged;
+#pragma warning restore 67
 
 		#endregion
 
@@ -55,25 +48,37 @@ namespace Simple.Model
 
 		public bool Equals(EqualityTestRecord other)
 		{
+			if (ReferenceEquals(this, other))
+			{
+				return true;
+			}
 			if (other == null)
 			{
 				return false;
 			}
 
-			switch (EqualitySemantic)
+			if (EqualitySemantic == EqualitySemantics.IdentityOnly)
 			{
-				case EqualitySemantics.IdentityOnly:
-					return this.EqualityTestRecordID == other.EqualityTestRecordID;
-
-				case EqualitySemantics.ValuesOnly:
-					return string.Equals(this.Payload, other.Payload, StringComparison.Ordinal);
-
-				case EqualitySemantics.IdentityAndValues:
-					return (this.EqualityTestRecordID == other.EqualityTestRecordID)
-						&& string.Equals(this.Payload, other.Payload, StringComparison.Ordinal);
-
-				default:
-					throw new InvalidOperationException("EqualitySemantic must be set to a valid value before equality methods will work.");
+				if ((EqualityTestRecordID == 0) &&
+				    (other.EqualityTestRecordID == 0))
+				{
+					// Not the same instance, but neither entity has been stored in the DB yet.
+					return false;
+				}
+				return this.EqualityTestRecordID == other.EqualityTestRecordID;
+			}
+			else if (EqualitySemantic == EqualitySemantics.ValuesOnly)
+			{
+				return string.Equals(this.Payload, other.Payload, StringComparison.Ordinal);
+			}
+			else if (EqualitySemantic == EqualitySemantics.IdentityAndValues)
+			{
+				return (this.EqualityTestRecordID == other.EqualityTestRecordID)
+				       && string.Equals(this.Payload, other.Payload, StringComparison.Ordinal);
+			}
+			else
+			{
+				throw new InvalidOperationException("EqualitySemantic must be set to a valid value before equality methods will work.");
 			}
 		}
 
@@ -94,21 +99,35 @@ namespace Simple.Model
 
 		public override int GetHashCode()
 		{
-			switch (EqualitySemantic)
+// ReSharper disable NonReadonlyFieldInGetHashCode
+			if (_cachedEntityHashCode != 0)
 			{
-				case EqualitySemantics.IdentityOnly:
-					return EqualityTestRecordID.GetHashCode();
-
-				case EqualitySemantics.ValuesOnly:
-					return Payload == null ? 0 : Payload.GetHashCode();
-
-				case EqualitySemantics.IdentityAndValues:
-					return EqualityTestRecordID.GetHashCode() * 127
-						^ (Payload == null ? 0 : Payload.GetHashCode());
-
-				default:
-					throw new InvalidOperationException("EqualitySemantic must be set to a valid value before equality methods can work.");
+				return _cachedEntityHashCode;
 			}
+
+			lock (this)
+			{
+				if (EqualitySemantic == EqualitySemantics.IdentityOnly)
+				{
+					_cachedEntityHashCode = EqualityTestRecordID > 0 ? EqualityTestRecordID.GetHashCode() : 0;
+				}
+				else if (EqualitySemantic == EqualitySemantics.ValuesOnly)
+				{
+					_cachedEntityHashCode = Payload == null ? 0 : Payload.GetHashCode();
+				}
+				else if (EqualitySemantic == EqualitySemantics.IdentityAndValues)
+				{
+					_cachedEntityHashCode = EqualityTestRecordID.GetHashCode() * 127
+					       ^ (Payload == null ? 0 : Payload.GetHashCode());
+				}
+
+				if (_cachedEntityHashCode == 0)
+				{
+					_cachedEntityHashCode = RuntimeHelpers.GetHashCode(this);
+				}
+			}
+			return _cachedEntityHashCode;
+// ReSharper restore NonReadonlyFieldInGetHashCode
 		}
 
 	}

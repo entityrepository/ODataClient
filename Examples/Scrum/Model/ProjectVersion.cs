@@ -12,10 +12,8 @@ namespace Scrum.Model
 {
 
 
-	public class ProjectVersion : BaseEntity
+	public class ProjectVersion : BaseEntity<int, ProjectVersion>
 	{
-
-		public int ID { get; set; }
 
 		public Project Project { get; set; }
 

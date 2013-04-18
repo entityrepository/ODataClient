@@ -21,10 +21,12 @@ namespace Simple.IntegrationTests
 		public const string TestServiceUrl = "http://localhost:37623/odata.svc/";
 
 		public SimpleClient(string serviceUrl)
-			: base(new ODataClient(new Uri(serviceUrl), typeof(EqualityTestRecord)))
+			: base(new ODataClient(new Uri(serviceUrl), typeof(EqualityTestRecord)), DataContextExtensions.SynchronousPreLoadDbEnums)
 		{}
 
 		public IEditRepository<EqualityTestRecord> EqualityTestRecords { get; private set; }
+
+		public IReadOnlyRepository<EqualitySemantics> EqualitySemantics { get; private set; }
 
 	}
 }

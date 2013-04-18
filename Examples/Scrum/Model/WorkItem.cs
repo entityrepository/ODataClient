@@ -13,7 +13,7 @@ namespace Scrum.Model
 {
 
 
-	public class WorkItem : BaseEntity
+	public class WorkItem : BaseEntity<int, WorkItem>
 	{
 		#region Fields
 
@@ -31,13 +31,9 @@ namespace Scrum.Model
 
 		#endregion
 
-		public int ID { get; set; }
-
 		public Project Project { get; set; }
 
-		public int Number { get; set; }
-
-		public int? ParentNumber { get; set; }
+		public WorkItem Parent { get; set; }
 
 		[Required, StringLength(256, MinimumLength = 2)]
 		public string Title { get; set; }
@@ -90,7 +86,9 @@ namespace Scrum.Model
 			set { SetCollectionProperty(ref _fixVersions, value); }
 		}
 
+		[Required]
 		public User Creator { get; set; }
+
 		public User Resolver { get; set; }
 		public User Closer { get; set; }
 
@@ -112,7 +110,9 @@ namespace Scrum.Model
 
 		public TimeSpan? TimeEstimate { get; set; }
 
+		[Required]
 		public DateTime Created { get; set; }
+
 		public DateTime? Due { get; set; }
 
 		public virtual ICollection<WorkItemMessage> Messages

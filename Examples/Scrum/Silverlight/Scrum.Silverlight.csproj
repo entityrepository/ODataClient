@@ -93,26 +93,26 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.Data.Edm.SL, Version=5.3.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+    <Reference Include="Microsoft.Data.Edm.SL, Version=5.4.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(PackagesDir)\Microsoft.Data.Edm.5.3.0\lib\sl4\Microsoft.Data.Edm.SL.dll</HintPath>
+      <HintPath>$(PackagesDir)\Microsoft.Data.Edm.5.4.0\lib\sl4\Microsoft.Data.Edm.SL.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Data.OData.SL, Version=5.3.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+    <Reference Include="Microsoft.Data.OData.SL, Version=5.4.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(PackagesDir)\Microsoft.Data.OData.5.3.0\lib\sl4\Microsoft.Data.OData.SL.dll</HintPath>
+      <HintPath>$(PackagesDir)\Microsoft.Data.OData.5.4.0\lib\sl4\Microsoft.Data.OData.SL.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Data.Services.Client.SL, Version=5.3.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+    <Reference Include="Microsoft.Data.Services.Client.SL, Version=5.4.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(PackagesDir)\Microsoft.Data.Services.Client.5.3.0\lib\sl4\Microsoft.Data.Services.Client.SL.dll</HintPath>
+      <HintPath>$(PackagesDir)\Microsoft.Data.Services.Client.5.4.0\lib\sl4\Microsoft.Data.Services.Client.SL.dll</HintPath>
     </Reference>
     <Reference Include="mscorlib" />
-    <Reference Include="PD.Base.PortableUtil, Version=1.1.0.2147, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="PD.Base.PortableUtil, Version=1.1.0.2361, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\packages\PD.Base.PortableUtil.1.1.0.2147-debug\lib\portable-net403+sl50\PD.Base.PortableUtil.dll</HintPath>
+      <HintPath>$(PackagesDir)\PD.Base.PortableUtil.1.1.0.2361-debug\lib\portable-net403+sl50\PD.Base.PortableUtil.dll</HintPath>
     </Reference>
-    <Reference Include="System.Spatial.SL, Version=5.3.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+    <Reference Include="System.Spatial.SL, Version=5.4.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(PackagesDir)\System.Spatial.5.3.0\lib\sl4\System.Spatial.SL.dll</HintPath>
+      <HintPath>$(PackagesDir)\System.Spatial.5.4.0\lib\sl4\System.Spatial.SL.dll</HintPath>
     </Reference>
     <Reference Include="System.Windows" />
     <Reference Include="system" />
@@ -145,7 +145,9 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="Properties\AppManifest.xml" />
   </ItemGroup>
   <ItemGroup>

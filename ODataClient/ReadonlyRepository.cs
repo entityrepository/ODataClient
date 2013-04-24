@@ -6,7 +6,6 @@
 
 
 using System;
-using System.Data.Services.Client;
 using PD.Base.EntityRepository.Api;
 using PD.Base.PortableUtil.Model;
 using System.Collections.Generic;
@@ -24,20 +23,14 @@ namespace PD.Base.EntityRepository.ODataClient
 		where TEntity : class
 	{
 
-		private readonly DataServiceCollection<TEntity> _dataServiceCollection;
+		private readonly ObservableCollection<TEntity> _localCollection;
 		private readonly ReadOnlyObservableCollection<TEntity> _readOnlyLocalCollection;
 
 		internal ReadOnlyRepository(ODataClient odataClient, string entitySetName)
 			: base(odataClient, entitySetName)
 		{
-			_dataServiceCollection = new DataServiceCollection<TEntity>(DataServiceContext,
-			                                                            null,
-			                                                            TrackingMode.AutoChangeTracking,
-			                                                            entitySetName,
-			                                                            OnEntityChanged,
-			                                                            OnCollectionChanged);
-
-			_readOnlyLocalCollection = new ReadOnlyObservableCollection<TEntity>(_dataServiceCollection);
+			_localCollection = new ObservableCollection<TEntity>();
+			_readOnlyLocalCollection = new ReadOnlyObservableCollection<TEntity>(_localCollection);
 		}
 
 		#region BaseRepository<TEntity>
@@ -56,7 +49,8 @@ namespace PD.Base.EntityRepository.ODataClient
 
 				lock (this)
 				{
-					_dataServiceCollection.Add(e);
+					// TODO: Support deduping by Id
+					_localCollection.Add(e);
 				}
 			}
 			return array;
@@ -71,21 +65,11 @@ namespace PD.Base.EntityRepository.ODataClient
 		{
 			lock (this)
 			{
-				_dataServiceCollection.Clear(true);
+				_localCollection.Clear();
 			}
 		}
 
 		#endregion		 
-
-		private bool OnCollectionChanged(EntityCollectionChangedParams arg)
-		{
-			throw new System.NotImplementedException();
-		}
-
-		private bool OnEntityChanged(EntityChangedParams arg)
-		{
-			throw new InvalidOperationException("Entities in a ReadOnlyRepository should not be modified: " + arg.Entity);
-		}
 
 	}
 }

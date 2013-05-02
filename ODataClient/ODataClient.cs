@@ -113,18 +113,30 @@ namespace PD.Base.EntityRepository.ODataClient
 		/// <summary>
 		/// Creates and begins initialization of this <see cref="ODataClient"/>
 		/// </summary>
-		/// <param name="serviceRoot">The <see cref="Uri"/> to the OData service.</param>
+		/// <param name="serviceRoot">The <see cref="Uri"/> to the OData service.  For silverlight apps, this may be a relative URL.</param>
 		/// <param name="entityAssemblies">The set of assemblies containing the entity types used in this service.</param>
 		/// <param name="entityTypeNamespaces">The set of namespaces containing the entity types used in this service.</param>
 		public ODataClient(Uri serviceRoot, IEnumerable<Assembly> entityAssemblies, IEnumerable<string> entityTypeNamespaces)
 		{
 			Contract.Requires<ArgumentNullException>(serviceRoot != null);
 
+#if SILVERLIGHT
+			// For silverlight applications, build a full Uri based on the silverlight app URL
+			SilverlightUtil.ConvertAppRelativeUriToAbsoluteUri(ref serviceRoot);
+#endif
+
+			if (! serviceRoot.IsAbsoluteUri)
+			{
+				throw new UriFormatException("Service URI " + serviceRoot + " must be absolute, or resolvable to an absolute URI from the application URI.");
+			}
+
 			_entityAssemblies = new HashSet<Assembly>(entityAssemblies);
 			_entityTypeNamespaces = new HashSet<string>(entityTypeNamespaces);
 			_dataServiceContext = new CustomDataServiceContext(serviceRoot, this);
-			_dataServiceContext.WritingEntity += OnWritingEntity;
-			_dataServiceContext.ReadingEntity += OnReadingEntity;
+
+			// These events aren't supported when reading/writing JSON
+			//_dataServiceContext.WritingEntity += OnWritingEntity;
+			//_dataServiceContext.ReadingEntity += OnReadingEntity;
 
 			// Build _baseUriWithSlash
 			UriBuilder uriBuilder = new UriBuilder(_dataServiceContext.BaseUri);

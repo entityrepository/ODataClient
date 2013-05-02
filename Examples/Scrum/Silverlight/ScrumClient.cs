@@ -20,14 +20,14 @@ namespace Scrum.Silverlight
 	public class ScrumClient : DataContext
 	{
 		// TODO: Support configuration of service URL
-		public const string DefaultUrl = "http://localhost:42200/odata.svc/";
+		public const string DefaultUrl = "odata.svc";
 
 		private static readonly Type s_modelType = typeof(Project);
 		private static readonly Assembly[] s_entityAssemblies = new[] { s_modelType.Assembly };
 		private static readonly string[] s_entityNamespaces = new[] { s_modelType.Namespace };
 
 		public ScrumClient(string scrumServiceUrl)
-			: base(new ODataClient(new Uri(scrumServiceUrl), s_entityAssemblies, s_entityNamespaces))
+			: base(new ODataClient(new Uri(scrumServiceUrl, UriKind.Relative), s_entityAssemblies, s_entityNamespaces))
 		{}
 
 		public ScrumClient()

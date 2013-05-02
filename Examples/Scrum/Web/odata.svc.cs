@@ -27,9 +27,27 @@ namespace Scrum.Web
 #if DEBUG
 			config.UseVerboseErrors = true;
 #endif
-
+			config.DataServiceBehavior.IncludeAssociationLinksInResponse = true;
 			config.DataServiceBehavior.MaxProtocolVersion = DataServiceProtocolVersion.V3;
 		}
 
+		protected override ScrumDb CreateDataSource()
+		{
+			ScrumDb db = new ScrumDb();
+
+			// This is needed b/c ID values are passed back from the client, which may reference entities that aren't yet loaded.
+			db.Configuration.ValidateOnSaveEnabled = false;
+			return db;
+		}
+
+		protected override void OnStartProcessingRequest(ProcessRequestArgs args)
+		{
+			base.OnStartProcessingRequest(args);
+		}
+
+		protected override void HandleException(HandleExceptionArgs args)
+		{
+			base.HandleException(args);
+		}
 	}
 }

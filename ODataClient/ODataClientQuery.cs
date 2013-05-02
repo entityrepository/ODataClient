@@ -48,7 +48,7 @@ namespace PD.Base.EntityRepository.ODataClient
 		/// </summary>
 		/// <param name="dataServiceContext"></param>
 		/// <param name="repository">The <see cref="BaseRepository{TEntity}"/> to create a default query for.</param>
-		internal ODataClientQuery(DataServiceContext dataServiceContext, BaseRepository<TEntity> repository)
+		internal ODataClientQuery(DataServiceContext dataServiceContext, BaseRepository repository)
 		{
 			Contract.Requires<ArgumentNullException>(dataServiceContext != null);
 			Contract.Requires<ArgumentNullException>(repository != null);
@@ -208,8 +208,9 @@ namespace PD.Base.EntityRepository.ODataClient
 					{
 						throw new InvalidOperationException("Expected results from " + operationResponse + " to be IEnumerable<" + typeof(TEntity) + ">.");
 					}
-					IEnumerable<TEntity> processedResults = client.ProcessQueryResults(results);
-					_results = processedResults.ToArray();
+					object[] processedResults = client.ProcessQueryResults(typeof(TEntity), results.Cast<object>().ToArray());
+					_results = new TEntity[processedResults.Length];
+					processedResults.CopyTo(_results, 0);
 				}
 				catch (Exception ex)
 				{
@@ -235,6 +236,11 @@ namespace PD.Base.EntityRepository.ODataClient
 			{
 				throw new InvalidOperationException("OData query has not successfully completed.");
 			}
+		}
+
+		public override string ToString()
+		{
+			return _dataServiceQuery.ToString();
 		}
 
 		/// <summary>

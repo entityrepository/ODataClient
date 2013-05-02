@@ -32,7 +32,8 @@ namespace PD.Base.EntityRepository.Api
 		/// This collection can be queried directly when appropriate, to avoid the performance overhead of querying the backing repository.
 		/// </para>
 		/// </remarks>
-		ReadOnlyObservableCollection<TEntity> Local { get; }
+		// TODO: Write and use IReadOnlySet, or IReadOnlyObservableSet
+		ICollection<TEntity> Local { get; }
 
 		/// <summary>
 		/// Provides a query for all entities in this repository.  The repository itself cannot be queried for all items.
@@ -44,9 +45,18 @@ namespace PD.Base.EntityRepository.Api
 		/// </summary>
 		/// <param name="entity">The <typeparamref name="TEntity"/> to store.</param>
 		/// <returns>
-		/// The attached entity.  This may not be the same object as <paramref name="entity"/>.
+		/// The attached entity.  This may not be the same object as <paramref name="entity"/>; an equal <typeparamref name="TEntity"/> may be returned.
 		/// </returns>
 		TEntity Attach(TEntity entity);
+
+		/// <summary>
+		/// Removes an entity from the local cache.
+		/// </summary>
+		/// <param name="entity">The <typeparamref name="TEntity"/> to remove.</param>
+		/// <returns>
+		/// <c>true</c> if <paramref name="entity"/> was detached; <c>false</c> if <c>entity</c> was not contained in the local cache.
+		/// </returns>
+		bool Detach(TEntity entity);
 
 #pragma warning disable 0419
 		/// <summary>
@@ -68,11 +78,11 @@ namespace PD.Base.EntityRepository.Api
 	{
 		#region IRepository<TEntity> Members
 
-		public ReadOnlyObservableCollection<TEntity> Local
+		public ICollection<TEntity> Local
 		{
 			get
 			{
-				Contract.Ensures(Contract.Result<ReadOnlyObservableCollection<TEntity>>() != null);
+				Contract.Ensures(Contract.Result<ICollection<TEntity>>() != null);
 
 				throw new NotImplementedException();
 			}
@@ -96,6 +106,13 @@ namespace PD.Base.EntityRepository.Api
 			throw new NotImplementedException();
 		}
 
+		public bool Detach(TEntity entity)
+		{
+			Contract.Requires<ArgumentNullException>(entity != null);
+
+			throw new NotImplementedException();
+		}
+
 		public IRequest LoadReference<TProperty>(TEntity entity, Expression<Func<TEntity, TProperty>> propertyExpression) where TProperty : class
 		{
 			Contract.Requires<ArgumentNullException>(entity != null);
@@ -111,7 +128,8 @@ namespace PD.Base.EntityRepository.Api
 
 		public abstract string Name { get; }
 		public abstract void ClearLocal();
-		public abstract Type EntityType { get; }
+		public abstract Type ElementType { get; }
+		public abstract IEnumerable<Type> EntityTypes { get; }
 
 		IEnumerator IEnumerable.GetEnumerator()
 		{
@@ -121,7 +139,6 @@ namespace PD.Base.EntityRepository.Api
 		public abstract IEnumerator<TEntity> GetEnumerator();
 
 		public abstract Expression Expression { get; }
-		public abstract Type ElementType { get; }
 		public abstract IQueryProvider Provider { get; }
 
 		#endregion

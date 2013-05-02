@@ -5,12 +5,11 @@
 // -----------------------------------------------------------------------
 
 
-using System;
+using System.Diagnostics;
+using System.Linq;
 using PD.Base.EntityRepository.Api;
 using PD.Base.PortableUtil.Model;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
 
 namespace PD.Base.EntityRepository.ODataClient
 {
@@ -23,53 +22,87 @@ namespace PD.Base.EntityRepository.ODataClient
 		where TEntity : class
 	{
 
-		private readonly ObservableCollection<TEntity> _localCollection;
-		private readonly ReadOnlyObservableCollection<TEntity> _readOnlyLocalCollection;
-
-		internal ReadOnlyRepository(ODataClient odataClient, string entitySetName)
-			: base(odataClient, entitySetName)
+		private readonly Dictionary<TEntity, TEntity> _localCache;
+ 
+		internal ReadOnlyRepository(ODataClient odataClient, EntitySetInfo entitySetInfo)
+			: base(odataClient, entitySetInfo)
 		{
-			_localCollection = new ObservableCollection<TEntity>();
-			_readOnlyLocalCollection = new ReadOnlyObservableCollection<TEntity>(_localCollection);
+			_localCache = new Dictionary<TEntity, TEntity>();
 		}
 
 		#region BaseRepository<TEntity>
 
-		internal override TEntity[] ProcessQueryResults(IEnumerable<TEntity> entities)
+		public override ICollection<TEntity> Local
 		{
-			TEntity[] array = entities.ToArray();
-			for (int i = 0; i < array.Length; ++i)
-			{
-				TEntity e = array[i];
-				IFreezable freezable = e as IFreezable;
-				if (freezable != null)
-				{
-					freezable.Freeze();
-				}
+			get { return _localCache.Values; }
+		}
 
-				lock (this)
+		internal override TEntity ProcessQueryResult(TEntity entity)
+		{
+			IFreezable freezable = entity as IFreezable;
+			if (freezable != null)
+			{
+				freezable.Freeze();
+			}
+
+			return AddToLocalCache(entity, EntityState.Unmodified);
+		}
+
+		internal override bool IsEditable
+		{
+			get { return false; }
+		}
+
+		internal override TEntity AddToLocalCache(TEntity entity, EntityState entityState)
+		{
+			lock (this)
+			{
+				// Dedup entity and equal entities
+				TEntity existingEqual;
+				if (_localCache.TryGetValue(entity, out existingEqual))
 				{
-					// TODO: Support deduping by Id
-					_localCollection.Add(e);
+					return existingEqual;
+				}
+				else
+				{
+					_localCache.Add(entity, entity);
+					return entity;
 				}
 			}
-			return array;
 		}
 
-		public override ReadOnlyObservableCollection<TEntity> Local
+		internal override bool RemoveFromLocalCache(TEntity entity)
 		{
-			get { return _readOnlyLocalCollection; }
+			lock (this)
+			{
+				return _localCache.Remove(entity);
+			}
 		}
 
+		#endregion
+		#region BaseRepository
+
+		/// <summary>
+		/// Clears all entities from this repository's local cache, and from the DataServiceContext cache.
+		/// </summary>
 		public override void ClearLocal()
 		{
 			lock (this)
 			{
-				_localCollection.Clear();
+				foreach (TEntity cachedEntity in _localCache.Keys)
+				{
+					DataServiceContext.Detach(cachedEntity);
+				}
+				_localCache.Clear();
+
+#if DEBUG
+				// In Debug builds, verify that there are no TEntity objects remaining
+				Debug.Assert(! DataServiceContext.Entities.Any(ed => ed.Entity is TEntity), "There should be no remaining " + typeof(TEntity).FullName + " objects in DataServiceContext after ClearLocal() completes.");
+#endif
 			}
 		}
 
-		#endregion		 
+		#endregion
 
 	}
 }

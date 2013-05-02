@@ -129,8 +129,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BaseRepository.cs" />
+    <Compile Include="BaseRepositoryOfTEntity.cs" />
+    <Compile Include="DataServiceLinkGraph.cs" />
+    <Compile Include="EntitySetInfo.cs" />
+    <Compile Include="EntityTracker.cs" />
     <Compile Include="EntityTypeInfo.cs" />
     <Compile Include="DataContextExtensions.cs" />
+    <Compile Include="ITypeResolver.cs" />
+    <Compile Include="LinkCollectionTracker.cs" />
     <Compile Include="ODataClient.cs" />
     <Compile Include="EditRepository.cs" />
     <Compile Include="ODataClientQuery.cs" />

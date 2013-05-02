@@ -23,6 +23,7 @@ namespace PD.Base.EntityRepository.ODataClient
 	{
 
 		private static ODataClientQuery<TEntity> ConvertQueryableToODataClientQuery<TEntity>(IQueryable queryable)
+			where TEntity : class
 		{
 			Contract.Requires<ArgumentNullException>(queryable != null);
 			Contract.Ensures(Contract.Result<ODataClientQuery<TEntity>>() != null);

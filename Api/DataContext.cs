@@ -42,10 +42,6 @@ namespace PD.Base.EntityRepository.Api
 			_dataContextImpl = implementationDataContext;
 			_initializeAction = initializeAction;
 			Task initTask = _dataContextImpl.InitializeTask.ContinueWith(task => FinishInitialization());
-			if (_initializeAction != null)
-			{
-				initTask = initTask.ContinueWith(task => _initializeAction(this));
-			}
 			_initializeTask = initTask;
 		}
 
@@ -97,6 +93,12 @@ namespace PD.Base.EntityRepository.Api
 			}
 
 			InitializeRepositoryProperties();
+
+			// Run the initialization action, if one was specified.
+			if (_initializeAction != null)
+			{
+				_initializeAction(this);
+			}
 		}
 
 		/// <summary>
@@ -325,10 +327,10 @@ namespace PD.Base.EntityRepository.Api
 			List<IRequest> queries = new List<IRequest>();
 			foreach (IRepository repository in dataContext.Repositories)
 			{
-				if (typeSelector(repository.EntityType))
+				if (typeSelector(repository.ElementType))
 				{
 					// query = repository.All; // using reflection b/c .All is on a generic interface
-					IRequest query = (IRequest) typeof(IRepository<>).MakeGenericType(repository.EntityType).GetProperty("All").GetValue(repository, null);
+					IRequest query = (IRequest) typeof(IRepository<>).MakeGenericType(repository.ElementType).GetProperty("All").GetValue(repository, null);
 					queries.Add(query);
 				}
 			}

@@ -4,8 +4,9 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
+using Microsoft.Data.Edm;
 using System;
-using System.Diagnostics.Contracts;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
@@ -20,31 +21,103 @@ namespace PD.Base.EntityRepository.ODataClient
 	{
 
 		private readonly Type _type;
+		private readonly IEdmEntityType _edmEntityType;
 
 		/// <summary>
-		/// The set of properties on <see cref="_type"/> with <c>[NotMapped]</c> attribute.
+		/// The set of properties on <see cref="_type"/> with <c>[IgnoreDataMember]</c> attribute.
 		/// Such properties should not be serialized.
 		/// </summary>
-		private readonly PropertyInfo[] _dontSerializeProperties;
+		private readonly string[] _dontSerializeProperties;
 
-		internal EntityTypeInfo(Type type)
+		/// <summary> Structural properties. </summary>
+		private readonly PropertyInfo[] _structuralProperties;
+
+		/// <summary> Reference properties. </summary>
+		private readonly PropertyInfo[] _navigationProperties;
+
+		/// <summary> One-to-many reference properties, which require creating links. </summary>
+		private readonly PropertyInfo[] _linkProperties;
+
+		internal EntityTypeInfo(IEdmModel edmModel, IEdmEntityType edmEntityType, ITypeResolver typeResolver)
 		{
-			Contract.Requires<ArgumentNullException>(type != null);
-
-			_type = type;
+			_edmEntityType = edmEntityType;
+			string edmTypeName = edmEntityType.FullName();
+			_type = typeResolver.ResolveTypeFromName(edmTypeName);
 
 			// Initialize DontSerializeProperties
-			_dontSerializeProperties = type.GetProperties().Where(p => p.GetCustomAttributes(typeof(IgnoreDataMemberAttribute), true).Length > 0).ToArray();
+			_dontSerializeProperties = _type.GetProperties().Where(p => p.GetCustomAttributes(typeof(IgnoreDataMemberAttribute), true).Length > 0).Select(p => p.Name).ToArray();
+
+			//edmEntityType.DeclaredKey;
+			//edmEntityType.BaseEntityType();
+			var structuralProperties = new List<PropertyInfo>();
+			foreach (var edmStructuralProperty in edmEntityType.StructuralProperties())
+			{
+				if (! _dontSerializeProperties.Contains(edmStructuralProperty.Name))
+				{
+					structuralProperties.Add(_type.GetProperty(edmStructuralProperty.Name));
+				}
+			}
+			_structuralProperties = structuralProperties.ToArray();
+
+			var navigationProperties = new List<PropertyInfo>();
+			var linkProperties = new List<PropertyInfo>();
+			foreach (var edmNavigationProperty in edmEntityType.NavigationProperties())
+			{
+				if (! _dontSerializeProperties.Contains(edmNavigationProperty.Name))
+				{
+					if (edmNavigationProperty.Type.IsCollection())
+					{
+						linkProperties.Add(_type.GetProperty(edmNavigationProperty.Name));
+					}
+					else
+					{
+						navigationProperties.Add(_type.GetProperty(edmNavigationProperty.Name));
+					}
+				}
+			}
+			_navigationProperties = navigationProperties.ToArray();
+			_linkProperties = linkProperties.ToArray();
 		}
 
-		internal PropertyInfo[] DontSerializeProperties
+		/// <summary> Properties that shouldn't be serialized. </summary>
+		internal string[] DontSerializeProperties
 		{
 			get { return _dontSerializeProperties; }
 		}
 
+		/// <summary> Structural properties. </summary>
+		internal PropertyInfo[] StructuralProperties
+		{
+			get { return _structuralProperties; }
+		}
+
+		/// <summary> Reference properties. </summary>
+		internal PropertyInfo[] NavigationProperties
+		{
+			get { return _navigationProperties; }
+		}
+
+		/// <summary> One-to-many reference properties, which require creating links. </summary>
+		internal PropertyInfo[] LinkProperties
+		{
+			get { return _linkProperties; }
+		}
+
+		/// <summary> The CLR entity type managed by this instance. </summary>
 		public Type EntityType
 		{
 			get { return _type; }
 		}
+
+		/// <summary> The EDM entity type managed by this instance. </summary>
+		public IEdmEntityType EdmEntityType
+		{
+			get { return _edmEntityType; }
+		}
+
+		/// <summary>
+		/// If set, specifies a base <see cref="EntityTypeInfo"/> type that this type inherits from.
+		/// </summary>
+		internal EntityTypeInfo BaseTypeInfo { get; set; }
 	}
 }

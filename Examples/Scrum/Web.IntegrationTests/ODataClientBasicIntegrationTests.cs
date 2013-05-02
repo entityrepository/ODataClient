@@ -20,7 +20,7 @@ namespace Scrum.Web.IntegrationTests
 	public class ODataClientBasicIntegrationTests
 	{
 
-		private const string c_odataTestServiceUrl = "http://localhost:42200/odata.svc/";
+		private const string c_odataTestServiceUrl = "http://jc-laptop:42200/odata.svc/";
 
 		// TODO: Shorten the timeout for real testing to 4000 or so
 		internal const int TestTimeout = 600000; // For debugging, this is 10m
@@ -39,7 +39,7 @@ namespace Scrum.Web.IntegrationTests
 		[Fact]
 		public void VerifyDbEnumsLoaded()
 		{
-			short statusId = 2;
+			const short statusId = 2;
 			Assert.Same(DbEnumManager.LookupById<short, Status>(statusId), _client.Status.Local.Single(status => status.ID == statusId));
 			
 			Assert.Equal(Priority.Unknown, _client.Priority.Local.Single(priority => priority.ID == 0));
@@ -53,7 +53,7 @@ namespace Scrum.Web.IntegrationTests
 			var queryCompletion = _client.InvokeAsync(query);
 			var completion = queryCompletion.ContinueWith(
 			                                       task =>
-			                                       { // TODO: Error propagation doesn't work
+			                                       {
 				                                       Assert.False(task.IsFaulted);
 				                                       Console.WriteLine(query.First());
 			                                       });
@@ -68,11 +68,12 @@ namespace Scrum.Web.IntegrationTests
 			Task completion = _client.InvokeAsync(query)
 			                         .ContinueWith(
 			                                       task =>
-			                                       { // TODO: Error propagation doesn't work
+			                                       {
 				                                       Assert.True(task.IsCompleted);
 				                                       Console.WriteLine(query.First());
 			                                       });
-			completion.Wait(TestTimeout);
+			Assert.True(completion.Wait(TestTimeout));
+			Assert.NotEmpty(query);
 		}
 
 		[Fact]
@@ -112,7 +113,7 @@ namespace Scrum.Web.IntegrationTests
 													   Assert.True(task.IsCompleted);
 													   workItem = query.First();
 												   });
-			completion.Wait(TestTimeout);
+			Assert.True(completion.Wait(TestTimeout));
 
 			Assert.NotNull(workItem);
 			Assert.True(workItem.Areas.Any(a => a.Owners.Any()));
@@ -153,14 +154,15 @@ namespace Scrum.Web.IntegrationTests
 
 			// Change it back - what happens?
 			workItem.TimeEstimate = previousTimeEstimate;
-			Assert.Equal(EntityState.Modified, _client.WorkItems.GetEntityState(workItem));
-			// TODO: It would be ideal to perform a diff between the original values and current value, and not
-			// track a change if there is no change in values or relationships.
+			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
 
-			// TODO: Implement ODataClient Revert
-			//// Revert the change
-			//_client.WorkItems.Revert(workItem);
-			//Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
+			// Make the change again
+			workItem.TimeEstimate = new TimeSpan(0, 90, 0);
+			Assert.Equal(EntityState.Modified, _client.WorkItems.GetEntityState(workItem));
+
+			// Revert the change
+			_client.WorkItems.Revert(workItem);
+			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
 
 			// Make the change again
 			workItem.TimeEstimate = new TimeSpan(0, 90, 0);
@@ -191,7 +193,7 @@ namespace Scrum.Web.IntegrationTests
 			int initialProjectID = workItem.Project.ID;
 
 
-			// Making changes
+			// Make changes
 
 			// Don't change the value - set the Project to the same
 			workItem.Project = _client.Projects.Local.Single(project => project.ID == initialProjectID);
@@ -202,15 +204,23 @@ namespace Scrum.Web.IntegrationTests
 			Assert.Equal(EntityState.Modified, _client.WorkItems.GetEntityState(workItem));
 
 			// Change back
-			// TODO: This should probably work, but doesn't
-			//workItem.Project = _client.Projects.Local.Single(project => project.ID == initialProjectID);
-			//Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
+			workItem.Project = _client.Projects.Local.Single(project => project.ID == initialProjectID);
+			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
+
+			// Change the Project
+			workItem.Project = _client.Projects.Local.First(project => project.ID != initialProjectID);
+			Assert.Equal(EntityState.Modified, _client.WorkItems.GetEntityState(workItem));
+
+			// Revert
+			_client.WorkItems.Revert(workItem);
+			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
+			Assert.Equal(initialProjectID, workItem.Project.ID);
 
 			// Cleanup
 			_client.WorkItems.ClearLocal();
 		}
 
-		[Fact(Skip = "TODO: One-to-many change tracking needs work.")]
+		[Fact]
 		public void TestOneToManyRelationshipChangeTracking()
 		{
 			_client.Clear().Wait(TestTimeout);
@@ -243,7 +253,7 @@ namespace Scrum.Web.IntegrationTests
 		/// but the delete should remove the data that is added, so if everything runs successfully there are
 		/// effectively no changes to the test database.
 		/// </summary>
-		[Fact(Skip = "SaveChanges() not fully working.")]
+		[Fact]
 		public void TestCreateUpdateDelete()
 		{
 			_client.Clear().Wait(TestTimeout);
@@ -252,47 +262,118 @@ namespace Scrum.Web.IntegrationTests
 
 			// Query for associated entities
 			var userQuery = _client.Users.Where(user => user.UserName == "joe");
+			var userQuery2 = _client.Users.Where(user => user.UserName == "gail");
 			var projectQuery = _client.Projects.Where(p => p.Key == "INFRA").Include(p => p.Areas).Include(p => p.Versions);
-			_client.InvokeAsync(userQuery, projectQuery).Wait(TestTimeout);
+			_client.InvokeAsync(userQuery, userQuery2, projectQuery).Wait(TestTimeout);
 			User joeUser = userQuery.Single();
+			User gailUser = userQuery2.Single();
 			Project infraProject = projectQuery.Single();
 			ProjectArea loggingArea = infraProject.Areas.Single(area => area.Name == "Logging");
 			var affectsVersions = infraProject.Versions.Where(version => version.IsReleased);
 
 			// Create the new workitem
-			WorkItem workItem = new WorkItem()
+			WorkItem workItem = new WorkItem(infraProject, joeUser, Priority.High)
 			                    {
 				                    Project = infraProject,
 				                    Areas = { loggingArea },
-				                    Creator = joeUser,
-									Created = DateTime.Now,
 				                    AssignedTo = { joeUser },
 				                    Title = "Logger isn't logging",
 				                    Description = "I think this is because it's not configured in app.config."
 			                    };
 			// Create an associated message
-			WorkItemMessage message = new WorkItemMessage()
+			WorkItemMessage message = new WorkItemMessage(workItem, joeUser)
 									  {
-										  Author = joeUser,
-										  Created = DateTime.Now,
-										  WorkItem = workItem,
 										  Message = "Yep, I verified that it's not configured correctly."
 									  };
 			workItem.Messages.Add(message);
 
+			// This adds the whole tree of related items and links
 			_client.WorkItems.Add(workItem);
 
 			// Verify that SaveChanges works
 			Assert.Equal(0, workItem.ID); // New
+			Assert.Equal(0, message.ID); // New
 			Assert.Equal(EntityState.Added, _client.WorkItems.GetEntityState(workItem));
 			Assert.Equal(EntityState.Added, _client.WorkItemMessages.GetEntityState(message));
-			_client.SaveChanges().Wait(TestTimeout);
+			Assert.True(_client.SaveChanges().Wait(TestTimeout));
 			Assert.True(workItem.ID > 1); // First WorkItem in db initializer should be ID 1, so adding this should always create a larger ID
+			Assert.True(message.ID >= 1);
+			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
+			Assert.Equal(EntityState.Unmodified, _client.WorkItemMessages.GetEntityState(message));
+
+			// Verify update works
+			workItem.Description += Environment.NewLine + "Please add a better bug description";
+			workItem.Due = DateTime.Now.AddDays(5);
+			Assert.Equal(EntityState.Modified, _client.WorkItems.GetEntityState(workItem));
+			Assert.True(_client.SaveChanges().Wait(TestTimeout));
 			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
 
-			// TODO: Verify response - are IDs now present?
-			// TODO: Verify update works
-			// TODO: Verify delete works
+			// Adds a link to an existing item
+			workItem.Subscribers.Add(gailUser);
+			Assert.Equal(EntityState.Modified, _client.WorkItems.GetEntityState(workItem));
+			Assert.True(_client.SaveChanges().Wait(TestTimeout));
+			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
+
+			// Verify adding child objects works
+			WorkItemMessage message2 = new WorkItemMessage(workItem, gailUser)
+			{
+				Created = DateTime.Now.AddHours(1),
+				Message = "This message was written in the future."
+			};
+			workItem.Messages.Add(message2);
+			Assert.Equal(EntityState.Modified, _client.WorkItems.GetEntityState(workItem));
+			// Since WorkItem.Messages implement INotifyCollectionchanged, message2 should be added to the repository as soon as it's added to workItem.Messages,
+			// since workItem is being tracked:
+			Assert.Equal(EntityState.Added, _client.WorkItemMessages.GetEntityState(message2));
+			Assert.True(_client.SaveChanges().Wait(TestTimeout));
+			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
+			Assert.Equal(EntityState.Unmodified, _client.WorkItemMessages.GetEntityState(message2));
+
+			// Clear all the local caches
+			Assert.Contains(message, _client.WorkItemMessages.Local);
+			Assert.True(_client.Clear().Wait(TestTimeout));
+			Assert.DoesNotContain(message, _client.WorkItemMessages.Local);
+			Assert.Equal(EntityState.Detached, _client.WorkItems.GetEntityState(workItem));
+			
+			// Query for this WorkItem and connected objects, check that everything is there
+			var query = _client.WorkItems.Where(wi => wi.ID == workItem.ID)
+										   .Include(wi => wi.Areas)
+										   .Include(wi => wi.Subscribers)
+										   .Include(wi => wi.Project.Include(p => p.Areas).Include(p => p.Versions))
+										   .Include(wi => wi.Messages.Include(m => m.Author).Include(m => m.WorkItem));
+			Assert.True(_client.InvokeAsync(query).Wait(TestTimeout));
+			WorkItem workItemQueried = query.Single();
+			Assert.Equal(2, workItemQueried.Messages.Count);
+			WorkItemMessage messageQueried = workItemQueried.Messages.ElementAt(1);
+			Assert.Equal(message2, messageQueried);
+			Assert.Same(workItemQueried, messageQueried.WorkItem);
+			Assert.Equal(workItem, messageQueried.WorkItem);
+			Assert.NotSame(workItem, messageQueried.WorkItem);
+			Assert.Contains(gailUser, workItemQueried.Subscribers);
+			Assert.DoesNotContain(joeUser, workItemQueried.Subscribers);
+			Assert.Contains(message, _client.WorkItemMessages.Local);
+			Assert.Contains(message2, _client.WorkItemMessages.Local);
+
+			// TODO: Delete is currently commented out.  Not quite working... it's tricky due to DB reference constraints.
+			//// Verify delete works
+			//// TODO: Cascade delete should be somehow described/implemented in the model.  I should be able to delete the WorkItem,
+			//// and have the WorkItemMessages deleted, but not the users, subscribers, etc (though the links should be deleted).
+			//// For now, I have to manually delete each entity.
+			//Assert.True(_client.WorkItems.Delete(workItemQueried));
+			//foreach (var workItemMessage in workItemQueried.Messages)
+			//{
+			//	Assert.True(_client.WorkItemMessages.Delete(workItemMessage));				
+			//}
+			//// REVIEW: There should be a cascade delete of the messages, but that may not be the case.
+			//Assert.True(_client.SaveChanges().Wait(TestTimeout));
+
+			//// Try running the same query again
+			//Assert.True(_client.InvokeAsync(query).Wait(TestTimeout));
+			//workItemQueried = query.SingleOrDefault();
+			//Assert.Null(workItemQueried);
+
+			//// REVIEW: Not sure what this will do
+			//Assert.DoesNotContain(message, _client.WorkItemMessages.Local);
 
 			_client.Clear().Wait(TestTimeout);
 		}
@@ -301,10 +382,6 @@ namespace Scrum.Web.IntegrationTests
 		// CUD on included objects
 		// Verify client-side validation of [Required] and [StringLength] attributes before SaveChanges() calls the server
 
-		// Change references
-		// Add mock repository objects when the server doesn't have them
-		// Read-only objects
-		// Cache read-only enum tables, then connect/include them on the client
 		// Delayed load, single items and collections
 		// References with ID and reference - like dbenum
 		// Check SQL for all of the above

@@ -5,7 +5,9 @@
 // -----------------------------------------------------------------------
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using System.Linq;
 using PD.Base.EntityRepository.Api.Base;
 
 namespace PD.Base.EntityRepository.Api
@@ -24,14 +26,19 @@ namespace PD.Base.EntityRepository.Api
 		string Name { get; }
 
 		/// <summary>
+		/// Returns the base entity <see cref="Type"/> for this repository.
+		/// </summary>
+		Type ElementType { get; }
+
+		/// <summary>
+		/// Returns the collection of entity types (which all must equal or subclass <see cref="ElementType"/>) held in this repository.
+		/// </summary>
+		IEnumerable<Type> EntityTypes { get; }
+
+		/// <summary>
 		/// Clear all locally cached data.
 		/// </summary>
 		void ClearLocal();
-
-		/// <summary>
-		/// Returns the entity <see cref="Type"/> for this repository.
-		/// </summary>
-		Type EntityType { get; }
 
 	}
 
@@ -56,11 +63,22 @@ namespace PD.Base.EntityRepository.Api
 			throw new NotImplementedException();
 		}
 
-		public Type EntityType
+		public Type ElementType
 		{
 			get
 			{
 				Contract.Ensures(null != Contract.Result<Type>());
+
+				throw new NotImplementedException();
+			}
+		}
+
+		public IEnumerable<Type> EntityTypes
+		{
+			get
+			{
+				Contract.Ensures(null != Contract.Result<IEnumerable<Type>>());
+				Contract.Ensures(Contract.Result<IEnumerable<Type>>().Any());
 
 				throw new NotImplementedException();
 			}

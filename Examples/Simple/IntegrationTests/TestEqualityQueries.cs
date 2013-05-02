@@ -29,11 +29,15 @@ namespace Simple.IntegrationTests
 
 			// Verify expected record count.
 			Assert.Equal(expectedRecordCount, query.Count());
+
+			// Verify that the DbEnum value was pulled into the ReadOnlyRepository - even though it was included and not the repository that was queried
+			Assert.Contains(equalitySemantic, Client.EqualitySemantics.Local);
+
 			return query;
 		}
 
 		[Fact]
-		public void QueryWithIdentityEquality()
+		public void QueryWithIdentityEqualityPreservesChanges()
 		{
 			var results = QueryForRecordsWith(EqualitySemantics.IdentityOnly, 2).ToArray();
 			results[0].Payload += "-modified";

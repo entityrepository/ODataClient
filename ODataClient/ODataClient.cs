@@ -5,15 +5,18 @@
 // -----------------------------------------------------------------------
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data.Services.Client;
 using System.Data.Services.Common;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.ServiceModel;
+using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
@@ -32,8 +35,14 @@ namespace PD.Base.EntityRepository.ODataClient
 	// Named repositories are necessary b/c we could have multiple tables backed by the same type
 	// Also TODO: Preview items
 	// TODO: Delayed load (resolve a referenced object that wasn't fetched initially)
-	public class ODataClient : IDataContextImpl, IDisposable
+	public class ODataClient : IDataContextImpl, IDisposable, ITypeResolver
 	{
+#if ! SILVERLIGHT
+		/// <summary>
+		/// <see cref="TraceSource"/> for logging.
+		/// </summary>
+		private static readonly TraceSource s_trace = new TraceSource(typeof(ODataClient).FullName, SourceLevels.Verbose);
+#endif
 
 		/// <summary>
 		/// The service base URI, plus a trailing slash.
@@ -48,12 +57,12 @@ namespace PD.Base.EntityRepository.ODataClient
 		/// <summary>
 		/// Collection of edit repositories - only modified within a lock.
 		/// </summary>
-		private readonly Dictionary<string, Tuple<Type, IRepository>> _editRepositories = new Dictionary<string, Tuple<Type, IRepository>>();
+		private readonly Dictionary<string, BaseRepository> _editRepositories = new Dictionary<string, BaseRepository>();
 
 		/// <summary>
 		/// Collection of readonly repositories - only modified within a lock.
 		/// </summary>
-		private readonly Dictionary<string, Tuple<Type, IRepository>> _readOnlyRepositories = new Dictionary<string, Tuple<Type, IRepository>>();
+		private readonly Dictionary<string, BaseRepository> _readOnlyRepositories = new Dictionary<string, BaseRepository>();
 
 		/// <summary>
 		/// The assemblies containing the entity types
@@ -61,24 +70,29 @@ namespace PD.Base.EntityRepository.ODataClient
 		private readonly ISet<Assembly> _entityAssemblies;
 
 		/// <summary>
+		/// All the namespaces containing the entity types in this service.
+		/// </summary>
+		private readonly ISet<string> _entityTypeNamespaces;
+
+		/// <summary>
 		/// All the namespaces in the odata service metadata.
 		/// </summary>
 		private readonly ISet<string> _entityMetadataNamespaces = new HashSet<string>();
 
 		/// <summary>
-		/// Map of all entitySet names to types - not modified after initialization.
+		/// Map of all entitySet names to <see cref="EntitySetInfo"/> - not modified after initialization.
 		/// </summary>
-		private readonly Dictionary<string, Type> _entitySetTypes = new Dictionary<string, Type>();
+		private readonly Dictionary<string, EntitySetInfo> _entitySets = new Dictionary<string, EntitySetInfo>();
+
+		/// <summary>
+		/// Map of entity type to <see cref="EntityTypeInfo"/> - not modified after initialization.  Used for breaking apart entities and tracking their links.
+		/// </summary>
+		private readonly Dictionary<Type, EntityTypeInfo> _entityTypeInfos = new Dictionary<Type, EntityTypeInfo>();
 
 		/// <summary>
 		/// Map of entity type to repository - not modified after initialization.  This ensures that only a single repository is used per type.
 		/// </summary>
-		private readonly Dictionary<Type, IRepository> _cacheRepositoryForType = new Dictionary<Type, IRepository>();
-
-		/// <summary>
-		/// All the namespaces containing the entity types in this service.
-		/// </summary>
-		private readonly ISet<string> _entityTypeNamespaces;
+		private readonly Dictionary<Type, BaseRepository> _repositoryForType = new Dictionary<Type, BaseRepository>();
 
 		/// <summary>
 		/// Task tracking asynchronous initialization.
@@ -148,7 +162,10 @@ namespace PD.Base.EntityRepository.ODataClient
 			_initializeTask = BeginInitializeTask();
 		}
 
-		internal DataServiceContext DataServiceContext
+		/// <summary>
+		/// Returns the <see cref="DataServiceContext"/> managed by this <see cref="ODataClient"/> instance.
+		/// </summary>
+		public DataServiceContext DataServiceContext
 		{
 			get { return _dataServiceContext; }
 		}
@@ -164,7 +181,7 @@ namespace PD.Base.EntityRepository.ODataClient
 		/// <inheritdoc />
 		public IEnumerable<IRepository> Repositories
 		{
-			get { return _cacheRepositoryForType.Values; }
+			get { return _repositoryForType.Values; }
 		}
 
 		#region IDisposable Members
@@ -188,34 +205,37 @@ namespace PD.Base.EntityRepository.ODataClient
 			lock (this)
 			{
 				// Read from cached EditRepository s.
-				Tuple<Type, IRepository> editRepoRecord;
+				BaseRepository editRepoRecord;
 				if (_editRepositories.TryGetValue(entitySetName, out editRepoRecord))
 				{
-					if (editRepoRecord.Item1 == entityType)
+					if (editRepoRecord.ElementType == entityType)
 					{
-						return (IEditRepository<TEntity>) editRepoRecord.Item2;
+						return (IEditRepository<TEntity>) editRepoRecord;
 					}
 					else
 					{
-						throw new InvalidOperationException(string.Format("EntitySet '{0}' is type {1} ; not {2}.", entitySetName, editRepoRecord.Item1, entityType));
+						throw new InvalidOperationException(string.Format("EntitySet '{0}' is type {1} ; not {2}.", entitySetName, editRepoRecord.ElementType, entityType));
 					}
 				}
 
 				// Validate against the server metadata
-				Type metadataEntityType;
-				if (! _entitySetTypes.TryGetValue(entitySetName, out metadataEntityType))
+				EntitySetInfo entitySetInfo;
+				if (! _entitySets.TryGetValue(entitySetName, out entitySetInfo))
 				{
 					// TODO: Create a placeholder/mock IEditRepository
 					throw new ArgumentException(string.Format("No entity set found in {0} named {1}", _dataServiceContext.BaseUri, entitySetName));
 				}
-				if (metadataEntityType != entityType)
+				if (entitySetInfo.ElementType.EntityType != entityType)
 				{
-					throw new InvalidOperationException(string.Format("EntitySet '{0}' is type {1} ; not {2}.", entitySetName, _entitySetTypes[entitySetName], entityType));
+					throw new InvalidOperationException(string.Format("EntitySet '{0}' is type {1} ; not {2}.", entitySetName, entitySetInfo.ElementType.EntityType, entityType));
 				}
 
-				EditRepository<TEntity> editRepository = new EditRepository<TEntity>(this, entitySetName);
-				_editRepositories.Add(entitySetName, new Tuple<Type, IRepository>(entityType, editRepository));
-				_cacheRepositoryForType.Add(entityType, editRepository);
+				EditRepository<TEntity> editRepository = new EditRepository<TEntity>(this, entitySetInfo);
+				_editRepositories.Add(entitySetName, editRepository);
+				foreach (Type type in editRepository.EntityTypes)
+				{
+					_repositoryForType.Add(type, editRepository);
+				}
 				return editRepository;
 			}
 		}
@@ -229,34 +249,37 @@ namespace PD.Base.EntityRepository.ODataClient
 			lock (this)
 			{
 				// Read from cached ReadOnlyRepository s.
-				Tuple<Type, IRepository> readonlyRepoRecord;
+				BaseRepository readonlyRepoRecord;
 				if (_readOnlyRepositories.TryGetValue(entitySetName, out readonlyRepoRecord))
 				{
-					if (readonlyRepoRecord.Item1 == entityType)
+					if (readonlyRepoRecord.ElementType == entityType)
 					{
-						return (IReadOnlyRepository<TEntity>) readonlyRepoRecord.Item2;
+						return (IReadOnlyRepository<TEntity>) readonlyRepoRecord;
 					}
 					else
 					{
-						throw new InvalidOperationException(string.Format("EntitySet '{0}' is type {1} ; not {2}.", entitySetName, readonlyRepoRecord.Item1, entityType));
+						throw new InvalidOperationException(string.Format("EntitySet '{0}' is type {1} ; not {2}.", entitySetName, readonlyRepoRecord.ElementType, entityType));
 					}
 				}
 
 				// Validate against the server metadata
-				Type metadataEntityType;
-				if (!_entitySetTypes.TryGetValue(entitySetName, out metadataEntityType))
+				EntitySetInfo entitySetInfo;
+				if (!_entitySets.TryGetValue(entitySetName, out entitySetInfo))
 				{
-					// TODO: Create a placeholder/mock IReadOnlyRepository?
+					// TODO: Create a placeholder/mock IEditRepository
 					throw new ArgumentException(string.Format("No entity set found in {0} named {1}", _dataServiceContext.BaseUri, entitySetName));
 				}
-				if (metadataEntityType != entityType)
+				if (entitySetInfo.ElementType.EntityType != entityType)
 				{
-					throw new InvalidOperationException(string.Format("EntitySet '{0}' is type {1} ; not {2}.", entitySetName, _entitySetTypes[entitySetName], entityType));
+					throw new InvalidOperationException(string.Format("EntitySet '{0}' is type {1} ; not {2}.", entitySetName, entitySetInfo.ElementType.EntityType, entityType));
 				}
 
-				ReadOnlyRepository<TEntity> readOnlyRepository = new ReadOnlyRepository<TEntity>(this, entitySetName);
-				_readOnlyRepositories.Add(entitySetName, new Tuple<Type, IRepository>(entityType, readOnlyRepository));
-				_cacheRepositoryForType.Add(entityType, readOnlyRepository);
+				ReadOnlyRepository<TEntity> readOnlyRepository = new ReadOnlyRepository<TEntity>(this, entitySetInfo);
+				_readOnlyRepositories.Add(entitySetName, readOnlyRepository);
+				foreach (Type type in readOnlyRepository.EntityTypes)
+				{
+					_repositoryForType.Add(type, readOnlyRepository);
+				}
 				return readOnlyRepository;
 			}
 		}
@@ -266,6 +289,15 @@ namespace PD.Base.EntityRepository.ODataClient
 		{
 			// Convert the queries into DataServiceRequests
 			ODataClientRequest[] internalRequests = requests.Cast<ODataClientRequest>().ToArray();
+#if SILVERLIGHT
+			Debug.WriteLine("Issuing batch requests:\n  {0}", string.Join("\n  ", (IEnumerable<ODataClientRequest>) internalRequests));
+#else
+			if (s_trace.Switch.ShouldTrace(TraceEventType.Information))
+			{
+				s_trace.TraceInformation("Issuing batch requests:\n  {0}", string.Join("\n  ", (IEnumerable<ODataClientRequest>) internalRequests));
+			}
+#endif
+
 			DataServiceRequest[] dataServiceRequests = internalRequests.Select(internalRequest => internalRequest.SendingRequest()).ToArray();
 			Task<DataServiceResponse> taskResponse =
 				Task.Factory.FromAsync<DataServiceRequest[], DataServiceResponse>((reqs, callback, state) => _dataServiceContext.BeginExecuteBatch(callback, state, reqs),
@@ -279,6 +311,7 @@ namespace PD.Base.EntityRepository.ODataClient
 		public Task SaveChanges()
 		{
 			ValidateChangedEntities();
+			LogChanges("Saving changes:");
 
 			Task<DataServiceResponse> taskResponse =
 				Task.Factory.FromAsync<DataServiceResponse>((callback, state) => _dataServiceContext.BeginSaveChanges(SaveChangesOptions.Batch, callback, state),
@@ -298,11 +331,11 @@ namespace PD.Base.EntityRepository.ODataClient
 		{
 			lock (this)
 			{
-				foreach (var editRepository in _editRepositories.Values.Select(tuple => tuple.Item2))
+				foreach (var editRepository in _editRepositories.Values)
 				{
 					editRepository.ClearLocal();
 				}
-				foreach (var readOnlyRepository in _readOnlyRepositories.Values.Select(tuple => tuple.Item2))
+				foreach (var readOnlyRepository in _readOnlyRepositories.Values)
 				{
 					readOnlyRepository.ClearLocal();
 				}
@@ -341,18 +374,45 @@ namespace PD.Base.EntityRepository.ODataClient
 						throw new InitializationException("Error parsing OData schema from " + response.ResponseUri + " : " + string.Join("; ", edmErrors));
 					}
 
+					// Store all the namespaces - needed for ResolveTypeFromName() to work
 					foreach (IEdmEntityContainer entityContainer in _edmModel.EntityContainers())
 					{
 						_entityMetadataNamespaces.Add(entityContainer.Namespace);
-						foreach (var entitySet in entityContainer.EntitySets())
+					}
+
+					// Store all the EntitySets
+					foreach (IEdmEntityContainer entityContainer in _edmModel.EntityContainers())
+					{
+						foreach (IEdmEntitySet edmEntitySet in entityContainer.EntitySets())
 						{
-							string elementTypeName = entitySet.ElementType.FullName();
-							Type elementType = ResolveTypeFromName(elementTypeName);
-							if (elementType != null)
+							var entitySetInfo = new EntitySetInfo(_edmModel, edmEntitySet, this);
+							_entitySets.Add(entitySetInfo.Name, entitySetInfo);
+
+							// Store the entity types contained in each entity set
+							foreach (EntityTypeInfo typeInfo in entitySetInfo.EntityTypes)
 							{
-								_entitySetTypes.Add(entitySet.Name, elementType);
+								_entityTypeInfos.Add(typeInfo.EntityType, typeInfo);
 							}
 						}
+					}
+
+					// Store any additional entity types not already added from the EntitySets
+					HashSet<IEdmEntityType> storedEdmEntityTypes = new HashSet<IEdmEntityType>(_entityTypeInfos.Values.Select(value => value.EdmEntityType));
+					foreach (IEdmEntityType edmEntityType in _edmModel.SchemaElements.OfType<IEdmEntityType>())
+					{
+						if (! storedEdmEntityTypes.Contains(edmEntityType))
+						{
+							var entityTypeInfo = new EntityTypeInfo(_edmModel, edmEntityType, this);
+							_entityTypeInfos.Add(entityTypeInfo.EntityType, entityTypeInfo);
+							storedEdmEntityTypes.Add(edmEntityType);
+						}
+					}
+
+					// Connect any derived EntityTypeInfo with their base class EntityTypeInfo
+					foreach (EntityTypeInfo typeInfo in _entityTypeInfos.Values.Where(eti => eti.BaseTypeInfo == null && eti.EdmEntityType.BaseEntityType() != null))
+					{
+						IEdmEntityType baseEdmEntityType = typeInfo.EdmEntityType.BaseEntityType();
+						typeInfo.BaseTypeInfo = _entityTypeInfos.Values.FirstOrDefault(eti => eti.EdmEntityType == baseEdmEntityType);
 					}
 
 					_dataServiceContext.Format.LoadServiceModel = () => _edmModel;
@@ -361,6 +421,13 @@ namespace PD.Base.EntityRepository.ODataClient
 					_dataServiceContext.Format.UseJson();
 				}
 			}
+		}
+
+		internal EntityTypeInfo GetEntityTypeInfoFor(Type entityType)
+		{
+			EntityTypeInfo entityTypeInfo;
+			_entityTypeInfos.TryGetValue(entityType, out entityTypeInfo);
+			return entityTypeInfo;
 		}
 
 		/// <summary>
@@ -384,7 +451,7 @@ namespace PD.Base.EntityRepository.ODataClient
 		/// </summary>
 		/// <param name="typeName"></param>
 		/// <returns></returns>
-		protected Type ResolveTypeFromName(string typeName)
+		public Type ResolveTypeFromName(string typeName)
 		{
 			// Try a cache lookup
 			Type resolvedType = null;
@@ -556,6 +623,11 @@ namespace PD.Base.EntityRepository.ODataClient
 
 		private void ValidateChangedEntities()
 		{
+			foreach (var editRepository in _editRepositories.Values)
+			{
+				editRepository.ReportChanges();
+			}
+
 			List<Exception> validationExceptions = new List<Exception>();
 			foreach (EntityDescriptor entityDescriptor in _dataServiceContext.Entities)
 			{
@@ -583,6 +655,50 @@ namespace PD.Base.EntityRepository.ODataClient
 			}			
 		}
 
+		/// <summary>
+		/// Logs all the changes in the <see cref="DataServiceContext"/>.
+		/// </summary>
+		/// <param name="message"></param>
+		public void LogChanges(string message = null)
+		{
+#if ! SILVERLIGHT
+			if (!s_trace.Switch.ShouldTrace(TraceEventType.Information))
+			{
+				return;
+			}
+#endif
+
+			StringBuilder sb = new StringBuilder();
+			if (message != null)
+			{
+				sb.AppendLine(message);
+			}
+
+			foreach (EntityDescriptor entityDescriptor in _dataServiceContext.Entities.Where(entityDescriptor => entityDescriptor.State != EntityStates.Unchanged))
+			{
+				sb.Append(entityDescriptor.State);
+				sb.Append(": ");
+				sb.AppendLine(entityDescriptor.Entity.ToString());
+			}
+			foreach (LinkDescriptor linkDescriptor in _dataServiceContext.Links.Where(linkDescriptor => linkDescriptor.State != EntityStates.Unchanged))
+			{
+				sb.Append(linkDescriptor.State);
+				sb.Append(" Link : ");
+				sb.Append(linkDescriptor.Source);
+				sb.Append(".");
+				sb.Append(linkDescriptor.SourceProperty);
+				sb.Append(" -> ");
+				sb.Append(linkDescriptor.Target);
+				sb.AppendLine();
+			}
+
+#if SILVERLIGHT
+			Debug.WriteLine(sb.ToString());
+#else
+			s_trace.TraceInformation(sb.ToString());
+#endif
+		}
+
 		private void ProcessSaveChangesResponse(Task<DataServiceResponse> responseTask)
 		{
 			DataServiceResponse batchResponse = responseTask.Result;
@@ -599,37 +715,217 @@ namespace PD.Base.EntityRepository.ODataClient
 
 			foreach (ChangeOperationResponse changeResponse in batchResponse)
 			{
-				// Log(changeResponse.Error);
-				// Log("Object updated: " + changeResponse.Descriptor);				
+				Descriptor descriptor = changeResponse.Descriptor;
+				if (changeResponse.Error != null)
+				{
+#if SILVERLIGHT
+					Debug.WriteLine("Error saving changes to {0} - status code: {1}, exception: {2}", descriptor, changeResponse.StatusCode, changeResponse.Error);
+#else
+					s_trace.TraceEvent(TraceEventType.Error, -2, "Error saving changes to {0} - status code: {1}, exception: {2}", descriptor, changeResponse.StatusCode, changeResponse.Error);
+#endif
+				}
+				else
+				{
+					EntityDescriptor entityDescriptor = descriptor as EntityDescriptor;
+					if (entityDescriptor != null)
+					{
+						object entity = entityDescriptor.Entity;
+#if SILVERLIGHT
+						Debug.WriteLine("Completed SaveChanges for {0}", entity);
+#else
+						s_trace.TraceEvent(TraceEventType.Verbose, 0, "Completed SaveChanges for {0}", entity);
+#endif
+						EntityTracker entityTracker = _repositoryForType[entity.GetType()].GetEntityTracker(entity);
+						if (entityTracker != null)
+						{
+							entityTracker.CaptureUnmodifiedState();
+						}
+					}
+					else
+					{
+						LinkDescriptor linkDescriptor = (LinkDescriptor) descriptor;
+						object entity = linkDescriptor.Source;
+						string linkCollectionPropertyName = linkDescriptor.SourceProperty;
+#if SILVERLIGHT
+						Debug.WriteLine("Completed SaveChanges for link {0} -> {1} -> {2}", entity, linkCollectionPropertyName, linkDescriptor.Target);
+#else
+						s_trace.TraceEvent(TraceEventType.Verbose, 0, "Completed SaveChanges for link {0} -> {1} -> {2}", entity, linkCollectionPropertyName, linkDescriptor.Target);
+#endif
+						LinkCollectionTracker linkTracker = _repositoryForType[entity.GetType()].GetLinkCollectionTracker(entity, linkCollectionPropertyName);
+						if (linkTracker != null)
+						{
+							linkTracker.CaptureUnmodifiedState();
+						}
+					}
+				}
+			}
+
+			// Clear all changes from all edit repositories - b/c just clearing things where there was a response is not always sufficient.
+			foreach (BaseRepository editRepository in _editRepositories.Values)
+			{
+				editRepository.ClearChanges();
 			}
 		}
 
-		internal IEnumerable<TEntity> ProcessQueryResults<TEntity>(IEnumerable<TEntity> results)
+		internal object[] ProcessQueryResults(Type entityType, object[] results)
 		{
-			// TODO: Break up related entities and process them
-			// TODO: Join related entities
-
 			// Find the repository for the type
-			IRepository repository;
-			if (! _cacheRepositoryForType.TryGetValue(typeof(TEntity), out repository))
+			BaseRepository repository;
+			if (_repositoryForType.TryGetValue(entityType, out repository))
 			{
-				// Doesn't match an existing repository, don't do anything
-				return results;
+				// Delegate to the repository to do repository-specific processing
+				results = repository.ProcessQueryResults(entityType, results);
 			}
 
-			// Delegate to the repository to do the processing
-			BaseRepository<TEntity> baseRepository = (BaseRepository<TEntity>) repository;
-			return baseRepository.ProcessQueryResults(results);
+			// Break up connected entities and process them
+			DataServiceLinkGraph linkedGraph = new DataServiceLinkGraph(DataServiceContext, results);
+			linkedGraph.WalkGraph();
+			foreach (object linkedEntity in linkedGraph.Entities)
+			{
+				if (_repositoryForType.TryGetValue(linkedEntity.GetType(), out repository))
+				{					
+					repository.ProcessQueryResult(linkedEntity);
+				}
+			}
+
+			return results;
+		}
+
+		internal object AddEntityGraph(object entity, BaseRepository repository = null, object parent = null, string parentPropertyName = null)
+		{
+			if (DataServiceContext.GetEntityDescriptor(entity) != null)
+			{
+				// Entity is already tracked in the DataServiceContext, don't need to add it again.
+				// This is also the recursive exit, in the case of circular references.
+				return entity;
+			}
+			if (repository == null)
+			{
+				repository = _repositoryForType[entity.GetType()];
+				if (repository == null)
+				{
+					throw new ArgumentException("Couldn't find an EditRepository for entity type {0}.", entity.GetType().FullName);
+				}
+			}
+			if (! repository.IsEditable)
+			{
+				// Can't add entities that are not editable.
+				throw new InvalidOperationException(string.Format("Entity \"{0}\" is not attached; it must be attached before it can be referenced.", entity));
+			}
+
+			// Add the entity to the local cache, and to the DataServiceContext
+			entity = repository.AddToLocal(entity, EntityState.Added);
+			if (parent == null)
+			{
+				DataServiceContext.AddObject(repository.Name, entity);
+			}
+			else
+			{
+				DataServiceContext.AddRelatedObject(parent, parentPropertyName, entity);
+			}
+
+			// Recursively add connected entities
+			EntityTypeInfo entityTypeInfo;
+			if (!_entityTypeInfos.TryGetValue(entity.GetType(), out entityTypeInfo))
+			{
+				// entity type not in the definition; unexpected 
+				throw new ArgumentException(string.Format("Entity type {0} not in service definition.", entity.GetType()));
+			}
+
+			// Add all referenced entity properties
+			foreach (PropertyInfo property in entityTypeInfo.NavigationProperties)
+			{
+				object referencedEntity = property.GetValue(entity, null);
+				if (referencedEntity != null)
+				{
+					// Recursively add the referencedEntity
+					AddEntityGraph(referencedEntity, _repositoryForType[referencedEntity.GetType()]);
+				}
+			}
+
+			// Add links for all connected properties
+			foreach (PropertyInfo property in entityTypeInfo.LinkProperties)
+			{
+				IEnumerable collection = (IEnumerable) property.GetValue(entity, null);
+				if (collection != null)
+				{
+					// Recursively add the collection elements
+					foreach (object linkedEntity in collection)
+					{
+						AddEntityGraph(linkedEntity, _repositoryForType[linkedEntity.GetType()], entity, property.Name);
+					}
+				}
+			}
+
+			return entity;
+		}
+		
+		internal bool DeleteEntityFromGraph(object entity, BaseRepository repository)
+		{
+			bool deletedFromDataServiceContext = false;
+			try
+			{
+				DataServiceContext.DeleteObject(entity);
+				deletedFromDataServiceContext = true;
+			}
+			catch (InvalidOperationException)
+			{ // Not in the context				
+			}
+
+			bool deletedFromLocal = repository.RemoveFromLocal(entity);
+
+			foreach (LinkDescriptor link in DataServiceContext.Links.Where(l => Equals(l.Source, entity) || Equals(l.Target, entity)))
+			{
+				// Determine whether to call SetLink() or DeleteLink().
+				EntityTypeInfo entityTypeInfo = repository.ODataClient.GetEntityTypeInfoFor(link.Source.GetType());
+				PropertyInfo navigationProperty = entityTypeInfo.NavigationProperties.FirstOrDefault(p => p.Name.Equals(link.SourceProperty));
+				if (navigationProperty != null)
+				{ // link.SourceProperty is a navigation property
+					if (ReferenceEquals(link.Target, entity))
+					{
+						// Navigation property points to entity being deleted; set it to null
+						navigationProperty.SetValue(link.Source, null, null);
+						DataServiceContext.SetLink(link.Source, link.SourceProperty, null);
+					}
+					else
+					{	// Navigation property sourced from entity being deleted; stop tracking it
+						DataServiceContext.DetachLink(link.Source, link.SourceProperty, link.Target);
+					}
+				}
+				else
+				{ // link.SourceProperty is a link collection (one to many) property
+					// For references to entity in a link collection, delete the link
+					if (ReferenceEquals(link.Target, entity))
+					{
+						EntityDescriptor sourceDescriptor = DataServiceContext.GetEntityDescriptor(link.Source);
+						if ((sourceDescriptor == null)
+							|| (sourceDescriptor.State == EntityStates.Deleted))
+						{
+							// Stop tracking the link
+							DataServiceContext.DetachLink(link.Source, link.SourceProperty, link.Target);
+						}
+						else
+						{
+							// Delete the link to entity
+							// REVIEW: Should entity actually be removed from the collection?
+							DataServiceContext.DeleteLink(link.Source, link.SourceProperty, link.Target);
+						}
+					}
+					else if (ReferenceEquals(null, link.Target))
+					{ // The link is no longer needed
+						DataServiceContext.DetachLink(link.Source, link.SourceProperty, link.Target);
+					}
+				}
+			}
+
+			return deletedFromDataServiceContext && deletedFromLocal;
 		}
 
 		private void OnWritingEntity(object sender, ReadingWritingEntityEventArgs e)
 		{
-			// Find the repository for the entity by type
-			// TODO: This may break for inheritance; TEST!
-			IRepository repository;
-			_cacheRepositoryForType.TryGetValue(e.Entity.GetType(), out repository);
-			EntityTypeInfo entityTypeInfo = repository as EntityTypeInfo;
-			if (entityTypeInfo != null)
+			// Find the EntityTypeInfo for the entity type
+			EntityTypeInfo entityTypeInfo;
+			if (_entityTypeInfos.TryGetValue(e.Entity.GetType(), out entityTypeInfo))
 			{
 				// Remove any properties that shouldn't be serialized.
 				if (entityTypeInfo.DontSerializeProperties.Length > 0)
@@ -641,9 +937,9 @@ namespace PD.Base.EntityRepository.ODataClient
 						XElement nodeProperties = e.Data.Descendants(mNamespace.GetName("properties")).FirstOrDefault();
 						if (nodeProperties != null)
 						{
-							foreach (var propertyInfo in entityTypeInfo.DontSerializeProperties)
+							foreach (var propertyName in entityTypeInfo.DontSerializeProperties)
 							{
-								nodeProperties.Descendants(dNamespace.GetName(propertyInfo.Name)).Remove();	
+								nodeProperties.Descendants(dNamespace.GetName(propertyName)).Remove();	
 							}							
 						}
 					}
@@ -654,7 +950,6 @@ namespace PD.Base.EntityRepository.ODataClient
 		private void OnReadingEntity(object sender, ReadingWritingEntityEventArgs e)
 		{
 			object entity = e.Entity;
-			Uri uri = e.BaseUri;
 		}
 
 		#region Nested type: CustomDataServiceContext

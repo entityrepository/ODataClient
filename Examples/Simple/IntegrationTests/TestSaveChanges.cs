@@ -19,6 +19,11 @@ namespace Simple.IntegrationTests
 		[Fact]
 		public void TestIdsAndEqualityBeforeAndAfterSaving2Items()
 		{
+			Client.Clear();
+
+			// Attach referenced object
+			Client.EqualitySemantics.Attach(EqualitySemantics.IdentityOnly);
+
 			var record1 = new EqualityTestRecord() { EqualitySemantic = EqualitySemantics.IdentityOnly, Payload = "record1" };
 			var record2 = new EqualityTestRecord() { EqualitySemantic = EqualitySemantics.IdentityOnly, Payload = "record2" };
 			Assert.Equal(EntityState.Detached, Client.EqualityTestRecords.GetEntityState(record1));

@@ -29,7 +29,7 @@ namespace PD.Base.EntityRepository.Api
 	{
 
 		/// <summary>
-		/// Adds the given <paramref name="entity"/> to the context in the <see cref="EntityState.Added"/> state such that it will
+		/// Adds the given <paramref name="entity"/> and connected entities to the context in the <see cref="EntityState.Added"/> state such that it will
 		/// be added to the remote repository when <see cref="IDataContextImpl.SaveChanges"/> is called.
 		/// </summary>
 		/// <param name="entity">The entity to add.</param>
@@ -37,8 +37,11 @@ namespace PD.Base.EntityRepository.Api
 		/// The entity.
 		/// </returns>
 		/// <remarks>
-		/// Note that entities that are already in the context in some other state will have their state set
+		/// Note that if <paramref name="entity"/> is already in the context in some other state it will have its state set
 		/// to Added.  <c>Add()</c> is a no-op if the entity is already in the context in the <see cref="EntityState.Added"/> state.
+		/// Connected entities that are not already in the context will be added to the context with state = Added; connected
+		/// entities that are already in the context will be not be modified; links to connected entities that do not already exist will
+		/// be added.
 		/// </remarks>
 		TEntity Add(TEntity entity);
 
@@ -51,6 +54,9 @@ namespace PD.Base.EntityRepository.Api
 		/// <paramref name="entity"/> is not current in the context and may not be eligible for deletion.</returns>
 		/// <remarks>
 		/// If <paramref name="entity"/> is not in the context, it will be attached to the context and marked for deletion.
+		/// Connected entities that are not already in the context will not be added to the context; connected
+		/// entities that are already in the context will be not be modified; links to connected entities that are in the context
+		/// will be deleted.
 		/// </remarks>
 		bool Delete(TEntity entity);
 
@@ -63,8 +69,11 @@ namespace PD.Base.EntityRepository.Api
 		/// The attached entity.  This may not be the same object as <paramref name="entity"/>.
 		/// </returns>
 		/// <remarks>
+		/// Attach does not break apart related objects - it is lower level than <see cref="Add"/> or <see cref="Delete"/>.
+		/// <para>
 		/// Note that entities that are already in the context in some other state will have their state set to <paramref name="entityState"/>.
 		/// <c>Attach</c> is a no-op if the entity is already in the context in the specified state.
+		/// </para>
 		/// </remarks>
 		TEntity Attach(TEntity entity, EntityState entityState = EntityState.Unmodified);
 
@@ -157,17 +166,18 @@ namespace PD.Base.EntityRepository.Api
 
 		public abstract string Name { get; }
 		public abstract void ClearLocal();
-		public abstract Type EntityType { get; }
+		public abstract Type ElementType { get; }
+		public abstract IEnumerable<Type> EntityTypes { get; }
 
 		public abstract IEnumerator<TEntity> GetEnumerator();
 
 		public abstract Expression Expression { get; }
-		public abstract Type ElementType { get; }
 		public abstract IQueryProvider Provider { get; }
 
-		public abstract ReadOnlyObservableCollection<TEntity> Local { get; }
+		public abstract ICollection<TEntity> Local { get; }
 		public abstract IQueryRequest<TEntity> All { get; }
 		public abstract TEntity Attach(TEntity entity);
+		public abstract bool Detach(TEntity entity);
 		public abstract IRequest LoadReference<TProperty>(TEntity entity, Expression<Func<TEntity, TProperty>> propertyExpression) where TProperty : class;
 
 		#endregion

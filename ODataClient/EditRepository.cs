@@ -4,12 +4,12 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
+using System.Diagnostics;
+using PD.Base.EntityRepository.Api;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Data.Services.Client;
 using System.Linq;
-using PD.Base.EntityRepository.Api;
 
 namespace PD.Base.EntityRepository.ODataClient
 {
@@ -21,95 +21,187 @@ namespace PD.Base.EntityRepository.ODataClient
 		where TEntity : class
 	{
 
-		//private readonly DataServiceCollection<TEntity> _dataServiceCollection;
-		private readonly ReadOnlyObservableCollection<TEntity> _readOnlyLocalCollection;
+		private readonly Dictionary<TEntity, EntityTracker> _entityTrackers = new Dictionary<TEntity, EntityTracker>();
 
-		internal EditRepository(ODataClient odataClient, string entitySetName)
-			: base(odataClient, entitySetName)
-		{
-			// TODO: Either change DbEnum<T, TId> to be DbEnum<TId, T>, or change it to be DbEnum<T> (with extension methods), 
-			// TODO: or write my own replacement for DataServiceCollection to implement change-tracking.
-			// Reason: System.Data.Services.Client.BindingEntityInfo.IsDataServiceCollection(typeof(T<T>), ...) causes a StackOverflowException
-			// calling System.Data.Services.Client.BindingEntityInfo.IsEntityType(typeof(T<T>)) and recursing forever.
-
-			// Provides change-tracking of INotifyPropertyChanged objects
-			//_dataServiceCollection = new DataServiceCollection<TEntity>(DataServiceContext);
-
-			_readOnlyLocalCollection = new ReadOnlyObservableCollection<TEntity>(new ObservableCollection<TEntity>()); //_dataServiceCollection);
-		}
+		internal EditRepository(ODataClient odataClient, EntitySetInfo entitySetInfo)
+			: base(odataClient, entitySetInfo)
+		{}
 
 		#region BaseRepository<TEntity>
 
-		internal override TEntity[] ProcessQueryResults(IEnumerable<TEntity> entities)
+		public override ICollection<TEntity> Local
 		{
-			TEntity[] array = entities.ToArray();
+			get { return _entityTrackers.Keys; }
+		}
 
+		internal override TEntity ProcessQueryResult(TEntity entity)
+		{
+			return AddToLocalCache(entity, EntityState.Unmodified);
+		}
+
+		internal override bool IsEditable
+		{
+			get { return true; }
+		}
+
+		internal override TEntity AddToLocalCache(TEntity entity, EntityState entityState)
+		{
 			lock (this)
 			{
-				// TODO: Support deduping by Id, if not done by DataServiceCollection?
-				//_dataServiceCollection.Load(array);
+				EntityTracker entityTracker;
+				if (! _entityTrackers.TryGetValue(entity, out entityTracker))
+				{
+					// entity is not being tracked; start tracking it
+					entityTracker = new EntityTracker(ODataClient, entity);
+					_entityTrackers.Add(entity, entityTracker);
+				}
+
+				if (entityState == EntityState.Unmodified)
+				{
+					// Start change tracking, and enable Revert()
+					entityTracker.CaptureUnmodifiedState();
+					foreach (var linkCollectionTracker in entityTracker.LinkCollectionTrackers)
+					{
+						if (linkCollectionTracker != null)
+						{
+							linkCollectionTracker.CaptureUnmodifiedState();
+						}
+					}
+				}
+
+				return (TEntity) entityTracker.Entity;
 			}
-			return array;
 		}
 
-		public override ReadOnlyObservableCollection<TEntity> Local
-		{
-			get { return _readOnlyLocalCollection; }
-		}
-
-		public override void ClearLocal()
+		internal override bool RemoveFromLocalCache(TEntity entity)
 		{
 			lock (this)
 			{
-				//_dataServiceCollection.Clear(true);
+				return _entityTrackers.Remove(entity);
 			}
 		}
 
 		#endregion
+		#region BaseRepository
 
+		internal override EntityTracker GetEntityTracker(object entity)
+		{
+			TEntity typedEntity = entity as TEntity;
+			if (typedEntity == null)
+			{
+				throw new ArgumentException(string.Format("Entity {0} is type {1} : not compatible with repository {2}", entity, entity.GetType().FullName, this));
+			}
+
+			EntityTracker entityTracker = null;
+			_entityTrackers.TryGetValue(typedEntity, out entityTracker);
+			return entityTracker;
+		}
+
+		internal override LinkCollectionTracker GetLinkCollectionTracker(object entity, string linkCollectionPropertyName)
+		{
+			EntityTracker entityTracker = GetEntityTracker(entity);
+			if (entityTracker == null)
+			{
+				return null;
+			}
+			return entityTracker.GetLinkCollectionTracker(linkCollectionPropertyName);
+		}
+
+		internal override void ReportChanges()
+		{
+			lock (this)
+			{
+				foreach (var entityTracker in _entityTrackers.Values)
+				{
+					entityTracker.ReportChanges(this);
+				}
+			}
+		}
+
+		internal override void ClearChanges()
+		{
+			lock (this)
+			{
+				foreach (var entityTracker in _entityTrackers.Values)
+				{
+					entityTracker.CaptureUnmodifiedState();
+					foreach (var linkCollectionTracker in entityTracker.LinkCollectionTrackers)
+					{
+						linkCollectionTracker.CaptureUnmodifiedState();
+					}
+				}
+			}
+		}
+
+		/// <summary>
+		/// Clears all entities from this repository's local cache, from change-tracking, and from the DataServiceContext cache.
+		/// </summary>
+		public override void ClearLocal()
+		{
+			lock (this)
+			{
+				foreach (TEntity cachedEntity in _entityTrackers.Keys)
+				{
+					DataServiceContext.Detach(cachedEntity);
+				}
+				_entityTrackers.Clear();
+
+#if DEBUG
+				// In Debug builds, verify that there are no TEntity objects remaining
+				Debug.Assert(! DataServiceContext.Entities.Any(ed => ed.Entity is TEntity), "There should be no remaining " + typeof(TEntity).FullName + " objects in DataServiceContext after ClearLocal() completes.");
+#endif
+			}
+		}
+
+		#endregion
 		#region IEditRepository<TEntity> Members
 
 		public TEntity Add(TEntity entity)
 		{
-			DataServiceContext.AddObject(Name, entity);
-			//_dataServiceCollection.Add(entity);
-			return entity;
+			return (TEntity) ODataClient.AddEntityGraph(entity, this);
 		}
 
 		public bool Delete(TEntity entity)
 		{
-			try
-			{
-				DataServiceContext.DeleteObject(entity);
-				return true;
-			}
-			catch (InvalidOperationException)
-			{ // Not in the context
-				return false;
-			}
+			return ODataClient.DeleteEntityFromGraph(entity, this);
 		}
 
 		public TEntity Attach(TEntity entity, EntityState entityState = EntityState.Unmodified)
 		{
+			// NOTE: Attach does not break apart related objects - it is lower level than Add or Delete
 			switch (entityState)
 			{
 				case EntityState.Added:
 					DataServiceContext.AddObject(Name, entity);
-					break;
+					return AddToLocalCache(entity, EntityState.Added);
 
 				case EntityState.Deleted:
-					DataServiceContext.AttachTo(Name, entity);
+					if (DataServiceContext.GetEntityDescriptor(entity) == null)
+					{
+						DataServiceContext.AttachTo(Name, entity);
+					}
 					DataServiceContext.DeleteObject(entity);
+					RemoveFromLocalCache(entity);
 					break;
 
 				case EntityState.Modified:
-					DataServiceContext.AttachTo(Name, entity);
+					if (DataServiceContext.GetEntityDescriptor(entity) == null)
+					{
+						DataServiceContext.AttachTo(Name, entity);
+					}
 					DataServiceContext.UpdateObject(entity);
-					break;
+					return AddToLocalCache(entity, EntityState.Modified);
 
 				case EntityState.Unmodified:
-					DataServiceContext.AttachTo(Name, entity);
-					break;
+					if (DataServiceContext.GetEntityDescriptor(entity) == null)
+					{
+						DataServiceContext.AttachTo(Name, entity);
+					}
+					else
+					{
+						DataServiceContext.ChangeState(entity, EntityStates.Unchanged);
+					}
+					return AddToLocalCache(entity, EntityState.Unmodified);
 
 				default:
 					throw new InvalidOperationException("Attach() cannot be called with " + entityState);
@@ -119,7 +211,16 @@ namespace PD.Base.EntityRepository.ODataClient
 
 		public EntityState Revert(TEntity entity)
 		{
-			throw new NotImplementedException("Need to implement Revert(TEntity)");
+			EntityTracker entityTracker;
+			if (_entityTrackers.TryGetValue(entity, out entityTracker))
+			{
+				entityTracker.RevertEntityToUnmodified(this);
+				return EntityState.Unmodified;
+			}
+			else
+			{
+				return EntityState.Detached;
+			}
 		}
 
 		public EntityState GetEntityState(TEntity entity)
@@ -140,13 +241,22 @@ namespace PD.Base.EntityRepository.ODataClient
 				case EntityStates.Detached:
 					return EntityState.Detached;
 				case EntityStates.Modified:
-					return EntityState.Modified;
 				case EntityStates.Unchanged:
+					EntityTracker entityTracker;
+					if (_entityTrackers.TryGetValue(entity, out entityTracker))
+					{
+						return entityTracker.AreStructuralPropertiesUnmodified()
+							   && entityTracker.AreSingleLinksUnmodified()
+						       && entityTracker.AreLinkCollectionsUnmodified()
+							       ? EntityState.Unmodified
+							       : EntityState.Modified;
+					}
 					break;
 				default:
 					throw new InvalidOperationException("Unexpected EntityDescriptor.State: " + entityDescriptor.State);
 			}
 
+			// REVIEW: This only runs if there is no EntityTracker for entity, which should not be the case...
 			// Check LinkDescriptors - tracks reference property changes
 			var changedLinks = DataServiceContext.Links.Where(linkDescriptor => Object.ReferenceEquals(entity, linkDescriptor.Source) &&
 			                                                                    ((linkDescriptor.State == EntityStates.Added) || (linkDescriptor.State == EntityStates.Deleted)

@@ -20,7 +20,7 @@ namespace Scrum.Model.Base
 	/// <summary>
 	/// Shared entity functionality.
 	/// </summary>
-	/// <typeparam name="TId">The Id type - must be a valid Id type in entity framework and data services - signed numeric type, string, etc.</typeparam>
+	/// <typeparam name="TId">The ID type - must be a valid ID type in entity framework and data services - signed numeric type, string, etc.</typeparam>
 	/// <typeparam name="TEntity">The entity type, which is derived from <c>BaseEntity</c></typeparam>
 	public abstract class BaseEntity<TId, TEntity> : Freezable, INotifyPropertyChanged, IValidatable, IEquatable<TEntity>
 		where TEntity : BaseEntity<TId, TEntity>

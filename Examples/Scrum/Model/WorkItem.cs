@@ -23,13 +23,29 @@ namespace Scrum.Model
 		private ICollection<WorkItemPropertyChange> _changeHistory;
 		private ICollection<ProjectVersion> _fixVersions;
 		private ICollection<WorkItemMessage> _messages;
-		// REVIEW: Perhaps the KeyFunc should be managed by an EntityManager?
+		// REVIEW: Perhaps the KeyFunc should be managed by an EntityManager? Or be moved to a base class.
 		private EntityRef<Priority, short> _priority = new EntityRef<Priority, short>(Priority.KeyFunc);
 		private EntityRef<Status, short> _status = new EntityRef<Status, short>(Status.KeyFunc);
+		private EntityRef<User, int> _creator = new EntityRef<User, int>(user => user.ID);
 		private ICollection<User> _subscribers;
 		private ICollection<WorkItemTimeLog> _timeLog;
 
 		#endregion
+
+		public WorkItem(Project project, User creator, Priority priority)
+		{
+			Project = project;
+			Creator = creator;
+			Priority = priority;
+			Status = Status.Open;
+			Created = DateTime.Now;
+		}
+
+		/// <summary>
+		/// Used for deserialization.
+		/// </summary>
+		public WorkItem()
+		{}
 
 		public Project Project { get; set; }
 
@@ -47,6 +63,7 @@ namespace Scrum.Model
 		//public Priority Priority { get; set; }
 		//public Status Status { get; set; }
 
+		[Required]
 		public Priority Priority
 		{
 			get { return _priority.Entity; }
@@ -55,24 +72,25 @@ namespace Scrum.Model
 
 		// REVIEW: This could be made private for EntityFramework - however it can't be made private for WCF Data Services.
 		// Need to see if this could be private for Web Api oData...
-		public short PriorityId
-		{
-			get { return _priority.ForeignKey; }
-			set { _priority.ForeignKey = value; }
-		}
+		//public short PriorityId
+		//{
+		//	get { return _priority.ForeignKey; }
+		//	set { _priority.ForeignKey = value; }
+		//}
 
+		[Required]
 		public Status Status
 		{
 			get { return _status.Entity; }
 			set { _status.Entity = value; }
 		}
 
-		// REVIEW: Ditto
-		public short StatusId
-		{
-			get { return _status.ForeignKey; }
-			set { _status.ForeignKey = value; }
-		}
+		//// REVIEW: Ditto
+		//public short StatusId
+		//{
+		//	get { return _status.ForeignKey; }
+		//	set { _status.ForeignKey = value; }
+		//}
 
 		public virtual ICollection<ProjectVersion> AffectsVersions
 		{
@@ -87,7 +105,16 @@ namespace Scrum.Model
 		}
 
 		[Required]
-		public User Creator { get; set; }
+		public User Creator
+		{
+			get { return _creator.Entity; }
+			set { _creator.Entity = value; }
+		}
+		public int CreatorId
+		{
+			get { return _creator.ForeignKey; }
+			set { _creator.ForeignKey = value; }
+		}
 
 		public User Resolver { get; set; }
 		public User Closer { get; set; }

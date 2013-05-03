@@ -4,11 +4,10 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-using System;
-using System.Reflection;
 using PD.Base.EntityRepository.Api;
 using PD.Base.EntityRepository.ODataClient;
 using Scrum.Model;
+using System;
 
 namespace Scrum.Silverlight
 {
@@ -19,15 +18,13 @@ namespace Scrum.Silverlight
 	/// </summary>
 	public class ScrumClient : DataContext
 	{
-		// TODO: Support configuration of service URL
+		// Relative URL is resolved against the hosting silverlight application.
 		public const string DefaultUrl = "odata.svc";
 
 		private static readonly Type s_modelType = typeof(Project);
-		private static readonly Assembly[] s_entityAssemblies = new[] { s_modelType.Assembly };
-		private static readonly string[] s_entityNamespaces = new[] { s_modelType.Namespace };
 
 		public ScrumClient(string scrumServiceUrl)
-			: base(new ODataClient(new Uri(scrumServiceUrl, UriKind.Relative), s_entityAssemblies, s_entityNamespaces))
+			: base(new ODataClient(new Uri(scrumServiceUrl, UriKind.Relative), s_modelType))
 		{}
 
 		public ScrumClient()

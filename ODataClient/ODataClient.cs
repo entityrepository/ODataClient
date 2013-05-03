@@ -120,32 +120,10 @@ namespace PD.Base.EntityRepository.ODataClient
 		{
 			Contract.Requires<ArgumentNullException>(serviceRoot != null);
 
-#if SILVERLIGHT
-			// For silverlight applications, build a full Uri based on the silverlight app URL
-			SilverlightUtil.ConvertAppRelativeUriToAbsoluteUri(ref serviceRoot);
-#endif
-
-			if (! serviceRoot.IsAbsoluteUri)
-			{
-				throw new UriFormatException("Service URI " + serviceRoot + " must be absolute, or resolvable to an absolute URI from the application URI.");
-			}
-
 			_entityAssemblies = new HashSet<Assembly>(entityAssemblies);
 			_entityTypeNamespaces = new HashSet<string>(entityTypeNamespaces);
-			_dataServiceContext = new CustomDataServiceContext(serviceRoot, this);
 
-			// These events aren't supported when reading/writing JSON
-			//_dataServiceContext.WritingEntity += OnWritingEntity;
-			//_dataServiceContext.ReadingEntity += OnReadingEntity;
-
-			// Build _baseUriWithSlash
-			UriBuilder uriBuilder = new UriBuilder(_dataServiceContext.BaseUri);
-			if ((uriBuilder.Path.Length > 0) && ! uriBuilder.Path.EndsWith("/"))
-			{
-				uriBuilder.Path += "/";
-			}
-			_baseUriWithSlash = uriBuilder.Uri;
-
+			CommonInit(serviceRoot, out _dataServiceContext, out _baseUriWithSlash);
 			_initializeTask = BeginInitializeTask();
 		}
 
@@ -161,7 +139,30 @@ namespace PD.Base.EntityRepository.ODataClient
 
 			_entityAssemblies = new HashSet<Assembly>(representativeEntityTypes.Select(type => type.Assembly));
 			_entityTypeNamespaces = new HashSet<string>(representativeEntityTypes.Select(type => type.Namespace));
-			_dataServiceContext = new CustomDataServiceContext(serviceRoot, this);
+
+			CommonInit(serviceRoot, out _dataServiceContext, out _baseUriWithSlash);
+			_initializeTask = BeginInitializeTask();
+		}
+
+		private void CommonInit(Uri serviceRoot, out CustomDataServiceContext dataServiceContext, out Uri baseUriWithSlash)
+		{
+			Contract.Requires<ArgumentNullException>(serviceRoot != null);
+
+#if SILVERLIGHT
+			// For silverlight applications, build a full Uri based on the silverlight app URL
+			SilverlightUtil.ConvertAppRelativeUriToAbsoluteUri(ref serviceRoot);
+#endif
+
+			if (!serviceRoot.IsAbsoluteUri)
+			{
+				throw new UriFormatException("Service URI " + serviceRoot + " must be absolute, or resolvable to an absolute URI from the application URI.");
+			}
+
+			dataServiceContext = new CustomDataServiceContext(serviceRoot, this);
+
+			// These events aren't supported when reading/writing JSON
+			//_dataServiceContext.WritingEntity += OnWritingEntity;
+			//_dataServiceContext.ReadingEntity += OnReadingEntity;
 
 			// Build _baseUriWithSlash
 			UriBuilder uriBuilder = new UriBuilder(_dataServiceContext.BaseUri);
@@ -169,9 +170,7 @@ namespace PD.Base.EntityRepository.ODataClient
 			{
 				uriBuilder.Path += "/";
 			}
-			_baseUriWithSlash = uriBuilder.Uri;
-
-			_initializeTask = BeginInitializeTask();
+			baseUriWithSlash = uriBuilder.Uri;
 		}
 
 		/// <summary>

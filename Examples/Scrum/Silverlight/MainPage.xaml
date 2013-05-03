@@ -4,7 +4,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    d:DesignHeight="600" d:DesignWidth="800">
+    d:DesignHeight="600" d:DesignWidth="800" Loaded="OnLoaded">
 
     <Grid x:Name="LayoutRoot" Background="White">
         <Button x:Name="btnLoadProjects" Content="Load Projects" HorizontalAlignment="Left" Margin="109,45,0,0" VerticalAlignment="Top" Width="117" Click="btnLoadProjects_Click"/>

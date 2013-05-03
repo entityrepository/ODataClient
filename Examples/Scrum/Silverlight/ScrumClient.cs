@@ -19,7 +19,7 @@ namespace Scrum.Silverlight
 	public class ScrumClient : DataContext
 	{
 		// Relative URL is resolved against the hosting silverlight application.
-		public const string DefaultUrl = "odata.svc";
+		public const string DefaultUrl = "odata.svc/";
 
 		private static readonly Type s_modelType = typeof(Project);
 

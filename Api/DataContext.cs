@@ -269,6 +269,18 @@ namespace PD.Base.EntityRepository.Api
 		}
 
 		/// <summary>
+		/// Reports all changes to the caller.  Each of the optional delegates are called once for each change.
+		/// </summary>
+		/// <param name="onChangedEntity">Called for each changed entity.</param>
+		/// <param name="onChangedLink">Called for each changed link.</param>
+		/// <returns>The total number of changes.</returns>
+		public int ReportChanges(Action<EntityState, object> onChangedEntity, Action<EntityState, object, string, object> onChangedLink)
+		{
+			EnsureInitializationCompleted();
+			return _dataContextImpl.ReportChanges(onChangedEntity, onChangedLink);
+		}
+
+		/// <summary>
 		/// Provides an asynchronous batch save of all modified entities in all <see cref="IEditRepository{TEntity}"/>s in this <see cref="IDataContextImpl"/>.
 		/// </summary>
 		/// <returns>A TPL <see cref="Task"/> that manages execution and completion of the batch save operation.</returns>

@@ -92,7 +92,7 @@ namespace PD.Base.EntityRepository.ODataClient
 		/// <summary>
 		/// Map of entity type to repository - not modified after initialization.  This ensures that only a single repository is used per type.
 		/// </summary>
-		private readonly Dictionary<Type, BaseRepository> _repositoryForType = new Dictionary<Type, BaseRepository>();
+		private readonly Dictionary<Type, BaseRepository> _repositoriesByType = new Dictionary<Type, BaseRepository>();
 
 		/// <summary>
 		/// Task tracking asynchronous initialization.
@@ -192,7 +192,12 @@ namespace PD.Base.EntityRepository.ODataClient
 		/// <inheritdoc />
 		public IEnumerable<IRepository> Repositories
 		{
-			get { return _repositoryForType.Values; }
+			get { return _repositoriesByType.Values; }
+		}
+
+		internal Dictionary<Type, BaseRepository> RepositoriesByType
+		{
+			get { return _repositoriesByType; }
 		}
 
 		#region IDisposable Members
@@ -245,7 +250,7 @@ namespace PD.Base.EntityRepository.ODataClient
 				_editRepositories.Add(entitySetName, editRepository);
 				foreach (Type type in editRepository.EntityTypes)
 				{
-					_repositoryForType.Add(type, editRepository);
+					_repositoriesByType.Add(type, editRepository);
 				}
 				return editRepository;
 			}
@@ -289,7 +294,7 @@ namespace PD.Base.EntityRepository.ODataClient
 				_readOnlyRepositories.Add(entitySetName, readOnlyRepository);
 				foreach (Type type in readOnlyRepository.EntityTypes)
 				{
-					_repositoryForType.Add(type, readOnlyRepository);
+					_repositoriesByType.Add(type, readOnlyRepository);
 				}
 				return readOnlyRepository;
 			}
@@ -319,11 +324,54 @@ namespace PD.Base.EntityRepository.ODataClient
 		}
 
 		/// <inheritdoc />
+		public int ReportChanges(Action<EntityState, object> onChangedEntity, Action<EntityState, object, string, object> onChangedLink)
+		{
+			// This just updates the DataServiceContext with changes based on the current state.
+			foreach (var editRepository in _editRepositories.Values)
+			{
+				editRepository.ReportChanges();
+			}
+
+			int countChanges = 0;
+			foreach (EntityDescriptor entityDescriptor in DataServiceContext.Entities.Where(ed => ed.State != EntityStates.Unchanged))
+			{
+				if (onChangedEntity != null)
+				{
+					onChangedEntity(EntityStateFromDataServiceState(entityDescriptor.State), entityDescriptor.Entity);
+				}
+				countChanges++;
+			}
+			foreach (LinkDescriptor linkDescriptor in DataServiceContext.Links.Where(l => l.State != EntityStates.Unchanged))
+			{
+				if (onChangedLink != null)
+				{
+					onChangedLink(EntityStateFromDataServiceState(linkDescriptor.State), linkDescriptor.Source, linkDescriptor.SourceProperty, linkDescriptor.Target);
+				}
+				countChanges++;
+			}
+			return countChanges;
+		}
+
+		/// <inheritdoc />
 		public Task SaveChanges()
 		{
-			ValidateChangedEntities();
-			LogChanges("Saving changes:");
+			foreach (var editRepository in _editRepositories.Values)
+			{
+				editRepository.ReportChanges();
+			}
 
+			int countChanges = ValidateChangedEntities();
+			if (countChanges == 0)
+			{
+#if SILVERLIGHT
+				Debug.WriteLine("No changes in SaveChanges().");
+#else
+				s_trace.TraceInformation("No changes in SaveChanges().");
+#endif
+				return new Task(() => {});
+			}
+
+			LogChanges("Saving changes:");
 			Task<DataServiceResponse> taskResponse =
 				Task.Factory.FromAsync<DataServiceResponse>((callback, state) => _dataServiceContext.BeginSaveChanges(SaveChangesOptions.Batch, callback, state),
 				                                            _dataServiceContext.EndSaveChanges,
@@ -632,13 +680,9 @@ namespace PD.Base.EntityRepository.ODataClient
 			return new ReadOnlyCollection<IRequest>(internalRequests);
 		}
 
-		private void ValidateChangedEntities()
+		private int ValidateChangedEntities()
 		{
-			foreach (var editRepository in _editRepositories.Values)
-			{
-				editRepository.ReportChanges();
-			}
-
+			int countChanges = 0;
 			List<Exception> validationExceptions = new List<Exception>();
 			foreach (EntityDescriptor entityDescriptor in _dataServiceContext.Entities)
 			{
@@ -657,13 +701,21 @@ namespace PD.Base.EntityRepository.ODataClient
 							validationExceptions.Add(vex);
 						}
 					}
-				}				
+					countChanges++;
+				}
+				else if (EntityStates.Deleted == (state & EntityStates.Deleted))
+				{
+					countChanges++;
+				}
 			}
 
 			if (validationExceptions.Count > 0)
 			{
 				throw new AggregateException("One or more added or modified entities failed validation.", validationExceptions);
-			}			
+			}
+
+			countChanges += _dataServiceContext.Links.Count(linkDescriptor => linkDescriptor.State != EntityStates.Unchanged);
+			return countChanges;
 		}
 
 		/// <summary>
@@ -746,7 +798,7 @@ namespace PD.Base.EntityRepository.ODataClient
 #else
 						s_trace.TraceEvent(TraceEventType.Verbose, 0, "Completed SaveChanges for {0}", entity);
 #endif
-						EntityTracker entityTracker = _repositoryForType[entity.GetType()].GetEntityTracker(entity);
+						EntityTracker entityTracker = _repositoriesByType[entity.GetType()].GetEntityTracker(entity);
 						if (entityTracker != null)
 						{
 							entityTracker.CaptureUnmodifiedState();
@@ -762,7 +814,7 @@ namespace PD.Base.EntityRepository.ODataClient
 #else
 						s_trace.TraceEvent(TraceEventType.Verbose, 0, "Completed SaveChanges for link {0} -> {1} -> {2}", entity, linkCollectionPropertyName, linkDescriptor.Target);
 #endif
-						LinkCollectionTracker linkTracker = _repositoryForType[entity.GetType()].GetLinkCollectionTracker(entity, linkCollectionPropertyName);
+						LinkCollectionTracker linkTracker = _repositoriesByType[entity.GetType()].GetLinkCollectionTracker(entity, linkCollectionPropertyName);
 						if (linkTracker != null)
 						{
 							linkTracker.CaptureUnmodifiedState();
@@ -778,30 +830,6 @@ namespace PD.Base.EntityRepository.ODataClient
 			}
 		}
 
-		internal object[] ProcessQueryResults(Type entityType, object[] results)
-		{
-			// Find the repository for the type
-			BaseRepository repository;
-			if (_repositoryForType.TryGetValue(entityType, out repository))
-			{
-				// Delegate to the repository to do repository-specific processing
-				results = repository.ProcessQueryResults(entityType, results);
-			}
-
-			// Break up connected entities and process them
-			DataServiceLinkGraph linkedGraph = new DataServiceLinkGraph(DataServiceContext, results);
-			linkedGraph.WalkGraph();
-			foreach (object linkedEntity in linkedGraph.Entities)
-			{
-				if (_repositoryForType.TryGetValue(linkedEntity.GetType(), out repository))
-				{					
-					repository.ProcessQueryResult(linkedEntity);
-				}
-			}
-
-			return results;
-		}
-
 		internal object AddEntityGraph(object entity, BaseRepository repository = null, object parent = null, string parentPropertyName = null)
 		{
 			if (DataServiceContext.GetEntityDescriptor(entity) != null)
@@ -812,7 +840,7 @@ namespace PD.Base.EntityRepository.ODataClient
 			}
 			if (repository == null)
 			{
-				repository = _repositoryForType[entity.GetType()];
+				repository = _repositoriesByType[entity.GetType()];
 				if (repository == null)
 				{
 					throw new ArgumentException("Couldn't find an EditRepository for entity type {0}.", entity.GetType().FullName);
@@ -850,7 +878,7 @@ namespace PD.Base.EntityRepository.ODataClient
 				if (referencedEntity != null)
 				{
 					// Recursively add the referencedEntity
-					AddEntityGraph(referencedEntity, _repositoryForType[referencedEntity.GetType()]);
+					AddEntityGraph(referencedEntity, _repositoriesByType[referencedEntity.GetType()]);
 				}
 			}
 
@@ -863,7 +891,7 @@ namespace PD.Base.EntityRepository.ODataClient
 					// Recursively add the collection elements
 					foreach (object linkedEntity in collection)
 					{
-						AddEntityGraph(linkedEntity, _repositoryForType[linkedEntity.GetType()], entity, property.Name);
+						AddEntityGraph(linkedEntity, _repositoriesByType[linkedEntity.GetType()], entity, property.Name);
 					}
 				}
 			}
@@ -963,6 +991,25 @@ namespace PD.Base.EntityRepository.ODataClient
 			object entity = e.Entity;
 		}
 
+		private EntityState EntityStateFromDataServiceState(EntityStates dataServiceState)
+		{
+			switch (dataServiceState)
+			{
+				case EntityStates.Added:
+					return EntityState.Added;
+				case EntityStates.Deleted:
+					return EntityState.Deleted;
+				case EntityStates.Detached:
+					return EntityState.Detached;
+				case EntityStates.Modified:
+					return EntityState.Modified;
+				case EntityStates.Unchanged:
+					return EntityState.Unmodified;
+				default:
+					return EntityState.Uninitialized;
+			}
+		}
+
 		#region Nested type: CustomDataServiceContext
 
 		/// <summary>
@@ -970,6 +1017,7 @@ namespace PD.Base.EntityRepository.ODataClient
 		/// </summary>
 		internal class CustomDataServiceContext : DataServiceContext
 		{
+
 			/// <summary>
 			/// Creates a new <see cref="CustomDataServiceContext"/>.
 			/// </summary>

@@ -4,6 +4,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -74,6 +75,14 @@ namespace PD.Base.EntityRepository.Api
 		/// Each <see cref="IRequest"/> contains its own results, completion status, and exception tracking.
 		/// </remarks>
 		Task<ReadOnlyCollection<IRequest>> InvokeAsync(params IRequest[] requests);
+
+		/// <summary>
+		/// Reports all changes to the caller.  Each of the optional delegates are called once for each change.
+		/// </summary>
+		/// <param name="onChangedEntity">Called for each changed entity.</param>
+		/// <param name="onChangedLink">Called for each changed link.</param>
+		/// <returns>The total number of changes.</returns>
+		int ReportChanges(Action<EntityState, object> onChangedEntity, Action<EntityState, object, string, object> onChangedLink);
 
 		/// <summary>
 		/// Provides an asynchronous batch save of all modified entities in all <see cref="IEditRepository{TEntity}"/>s in this <see cref="IDataContextImpl"/>.

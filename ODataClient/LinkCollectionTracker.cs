@@ -54,16 +54,19 @@ namespace PD.Base.EntityRepository.ODataClient
 
 		private void OnCollectionChanged(object sender, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs)
 		{
-			_collectionChanged = true;
-
-			if (notifyCollectionChangedEventArgs.Action == NotifyCollectionChangedAction.Add)
+			if (! EntityTracker.ChangeTrackingDisabled)
 			{
-				foreach (object o in notifyCollectionChangedEventArgs.NewItems)
+				_collectionChanged = true;
+
+				if (notifyCollectionChangedEventArgs.Action == NotifyCollectionChangedAction.Add)
 				{
-					// If o (each of the new items) are already attached, this will do nothing.
-					// If o is new, this will mark it as added, and will also add any connected objects
-					// that aren't attached.
-					_parentEntityTracker.ODataClient.AddEntityGraph(o, null, _parentEntityTracker.Entity, _sourcePropertyName);
+					foreach (object o in notifyCollectionChangedEventArgs.NewItems)
+					{
+						// If o (each of the new items) are already attached, this will do nothing.
+						// If o is new, this will mark it as added, and will also add any connected objects
+						// that aren't attached.
+						_parentEntityTracker.ODataClient.AddEntityGraph(o, null, _parentEntityTracker.Entity, _sourcePropertyName);
+					}
 				}
 			}
 		}

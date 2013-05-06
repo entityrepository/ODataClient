@@ -95,28 +95,6 @@ namespace PD.Base.EntityRepository.ODataClient
 
 		internal abstract TEntity ProcessQueryResult(TEntity entity);
 
-		internal override object[] ProcessQueryResults(Type entityType, object[] entities)
-		{
-			if (entityType != typeof(TEntity))
-			{
-				throw new InvalidOperationException(string.Format("entityType {0} must match the repository TEntity type {1}", entityType, typeof(TEntity)));
-			}
-			List<object> results = new List<object>();
-			foreach (var entity in entities)
-			{
-				TEntity typedEntity = entity as TEntity;
-				if (typedEntity == null)
-				{
-					// tracer.Error("Error processing entity {0}; not of TEntity type {1}.", entity, typeof(TEntity));
-				}
-				else
-				{
-					results.Add(ProcessQueryResult(typedEntity));
-				}
-			}
-			return results.ToArray();
-		}
-
 		internal override object ProcessQueryResult(object entity)
 		{
 			if (entity == null)

@@ -203,14 +203,29 @@ namespace PD.Base.EntityRepository.ODataClient
 			{
 				try
 				{
-					IEnumerable<TEntity> results = operationResponse as IEnumerable<TEntity>;
-					if (results == null)
+					IEnumerable<TEntity> enumResults = operationResponse as IEnumerable<TEntity>;
+					if (enumResults == null)
 					{
 						throw new InvalidOperationException("Expected results from " + operationResponse + " to be IEnumerable<" + typeof(TEntity) + ">.");
 					}
-					object[] processedResults = client.ProcessQueryResults(typeof(TEntity), results.Cast<object>().ToArray());
-					_results = new TEntity[processedResults.Length];
-					processedResults.CopyTo(_results, 0);
+
+					// Disable change tracking while materializing the results
+					EntityTracker.ChangeTrackingDisabled = true;
+					_results = enumResults.ToArray();
+					EntityTracker.ChangeTrackingDisabled = false;
+
+					// Break up connected entities and have each repository process them
+					DataServiceLinkGraph linkGraph = new DataServiceLinkGraph(client.DataServiceContext, _results.Cast<object>().ToArray());
+					linkGraph.WalkGraph();
+					foreach (object linkedEntity in linkGraph.Entities)
+					{
+						BaseRepository repository;
+						if (client.RepositoriesByType.TryGetValue(linkedEntity.GetType(), out repository))
+						{					
+							repository.ProcessQueryResult(linkedEntity);
+						}
+					}
+
 				}
 				catch (Exception ex)
 				{

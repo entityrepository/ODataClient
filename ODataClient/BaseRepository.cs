@@ -51,23 +51,14 @@ namespace PD.Base.EntityRepository.ODataClient
 			get { return _odataClient.DataServiceContext; }
 		}
 
-		///  <summary>
+		/// <summary>
 		///  When entities come in off the wire when returned from a request, they are added to the local collection by calling this
 		///  method.
 		/// 
-		///  In addition, the repository may freeze or enable change tracking on the entities.
-		///  </summary>
-		/// <param name="entityType"></param>
-		/// <param name="entities">The set of entities to be added to the local collection.</param>
-		///  <returns>The same logical set of entities as <paramref name="entities"/>, though some
-		///  of the entities may be replaced due to deduplication.</returns>
-		internal abstract object[] ProcessQueryResults(Type entityType, object[] entities);
-
-		/// <summary>
-		/// Process a single query result.
+		///  In addition, the repository may freeze or enable change tracking on the entity.
 		/// </summary>
 		/// <param name="entity"></param>
-		/// <returns></returns>
+		/// <returns>The processed entity.</returns>
 		internal abstract object ProcessQueryResult(object entity);
 
 		/// <summary>

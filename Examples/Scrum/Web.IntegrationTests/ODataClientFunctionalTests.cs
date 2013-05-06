@@ -1,5 +1,5 @@
 ﻿// -----------------------------------------------------------------------
-// <copyright file="ODataClientBasicIntegrationTests.cs" company="PrecisionDemand">
+// <copyright file="ODataClientFunctionalTests.cs" company="PrecisionDemand">
 // Copyright (c) 2013 PrecisionDemand.  All rights reserved.
 // </copyright>
 // -----------------------------------------------------------------------
@@ -17,23 +17,23 @@ namespace Scrum.Web.IntegrationTests
 {
 
 
-	public class ODataClientBasicIntegrationTests
+	public class ODataClientFunctionalTests : IDisposable
 	{
-
-		private const string c_odataTestServiceUrl = "http://jc-laptop:42200/odata.svc/";
-
-		// TODO: Shorten the timeout for real testing to 4000 or so
-		internal const int TestTimeout = 600000; // For debugging, this is 10m
 
 		private readonly ScrumClient _client;
 
-		public ODataClientBasicIntegrationTests()
+		public ODataClientFunctionalTests()
 		{
-			_client = new ScrumClient(c_odataTestServiceUrl);
+			_client = new ScrumClient();
 
 			// REVIEW: We should require that this is called before any repository properties are accessed.  But that's somewhat difficult to do,
 			// so for now, we have to wait for initialization to complete.
-			Assert.True(_client.InitializeTask.Wait(TestTimeout));
+			Assert.True(_client.InitializeTask.Wait(ScrumClient.TestTimeout));
+		}
+
+		public void Dispose()
+		{
+			_client.Dispose();
 		}
 
 		[Fact]
@@ -57,7 +57,7 @@ namespace Scrum.Web.IntegrationTests
 				                                       Assert.False(task.IsFaulted);
 				                                       Console.WriteLine(query.First());
 			                                       });
-			completion.Wait(TestTimeout);
+			completion.Wait(ScrumClient.TestTimeout);
 		}
 
 		[Fact]
@@ -72,7 +72,7 @@ namespace Scrum.Web.IntegrationTests
 				                                       Assert.True(task.IsCompleted);
 				                                       Console.WriteLine(query.First());
 			                                       });
-			Assert.True(completion.Wait(TestTimeout));
+			Assert.True(completion.Wait(ScrumClient.TestTimeout));
 			Assert.NotEmpty(query);
 		}
 
@@ -88,7 +88,7 @@ namespace Scrum.Web.IntegrationTests
 				                                       Assert.True(task.IsCompleted);
 				                                       workItem = query.First();
 			                                       });
-			completion.Wait(TestTimeout);
+			completion.Wait(ScrumClient.TestTimeout);
 
 			Assert.NotNull(workItem);
 			Assert.NotEmpty(workItem.Areas);
@@ -113,7 +113,7 @@ namespace Scrum.Web.IntegrationTests
 													   Assert.True(task.IsCompleted);
 													   workItem = query.First();
 												   });
-			Assert.True(completion.Wait(TestTimeout));
+			Assert.True(completion.Wait(ScrumClient.TestTimeout));
 
 			Assert.NotNull(workItem);
 			Assert.True(workItem.Areas.Any(a => a.Owners.Any()));
@@ -135,11 +135,11 @@ namespace Scrum.Web.IntegrationTests
 		[Fact]
 		public void TestPropertyChangeTracking()
 		{
-			_client.Clear().Wait(TestTimeout);
+			_client.Clear().Wait(ScrumClient.TestTimeout);
 
 			// Fetch a work item, and all ProjectAreas
 			var workItemQuery = _client.WorkItems.Take(1);
-			_client.InvokeAsync(workItemQuery).Wait(TestTimeout);
+			_client.InvokeAsync(workItemQuery).Wait(ScrumClient.TestTimeout);
 			WorkItem workItem = workItemQuery.First();
 			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
 
@@ -179,14 +179,14 @@ namespace Scrum.Web.IntegrationTests
 		{
 			// Setup
 
-			_client.Clear().Wait(TestTimeout);
+			_client.Clear().Wait(ScrumClient.TestTimeout);
 
 			// Fetch a work item, and project
 			var workItemQuery = _client.WorkItems.Include(wi => wi.Project).Take(1);
 			// Query for all Projects
 			var allProjectsQuery = _client.Projects.All;
 	
-			_client.InvokeAsync(workItemQuery, allProjectsQuery).Wait(TestTimeout);
+			_client.InvokeAsync(workItemQuery, allProjectsQuery).Wait(ScrumClient.TestTimeout);
 			WorkItem workItem = workItemQuery.First();
 			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
 
@@ -223,16 +223,16 @@ namespace Scrum.Web.IntegrationTests
 		[Fact]
 		public void TestOneToManyRelationshipChangeTracking()
 		{
-			_client.Clear().Wait(TestTimeout);
+			_client.Clear().Wait(ScrumClient.TestTimeout);
 
 			// Fetch a work item, and all ProjectAreas
 			var workItemQuery = _client.WorkItems.Include(wi => wi.Project).Include(wi => wi.Areas).Take(1);
-			_client.InvokeAsync(workItemQuery).Wait(TestTimeout);
+			_client.InvokeAsync(workItemQuery).Wait(ScrumClient.TestTimeout);
 			WorkItem workItem = workItemQuery.First();
 			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
 
 			var allAreasInProjectQuery = _client.ProjectAreas.Where(area => area.Project.ID == workItem.Project.ID);
-			_client.InvokeAsync(allAreasInProjectQuery).Wait(TestTimeout);
+			_client.InvokeAsync(allAreasInProjectQuery).Wait(ScrumClient.TestTimeout);
 			ProjectArea[] allAreasInProject = allAreasInProjectQuery.ToArray();
 
 			// Remove all current Areas from the workitem
@@ -256,7 +256,7 @@ namespace Scrum.Web.IntegrationTests
 		[Fact]
 		public void TestCreateUpdateDelete()
 		{
-			_client.Clear().Wait(TestTimeout);
+			_client.Clear().Wait(ScrumClient.TestTimeout);
 
 			// Create a new work item in the INFRA/Logging, assigned to joe
 
@@ -264,7 +264,7 @@ namespace Scrum.Web.IntegrationTests
 			var userQuery = _client.Users.Where(user => user.UserName == "joe");
 			var userQuery2 = _client.Users.Where(user => user.UserName == "gail");
 			var projectQuery = _client.Projects.Where(p => p.Key == "INFRA").Include(p => p.Areas).Include(p => p.Versions);
-			_client.InvokeAsync(userQuery, userQuery2, projectQuery).Wait(TestTimeout);
+			_client.InvokeAsync(userQuery, userQuery2, projectQuery).Wait(ScrumClient.TestTimeout);
 			User joeUser = userQuery.Single();
 			User gailUser = userQuery2.Single();
 			Project infraProject = projectQuery.Single();
@@ -295,7 +295,7 @@ namespace Scrum.Web.IntegrationTests
 			Assert.Equal(0, message.ID); // New
 			Assert.Equal(EntityState.Added, _client.WorkItems.GetEntityState(workItem));
 			Assert.Equal(EntityState.Added, _client.WorkItemMessages.GetEntityState(message));
-			Assert.True(_client.SaveChanges().Wait(TestTimeout));
+			Assert.True(_client.SaveChanges().Wait(ScrumClient.TestTimeout));
 			Assert.True(workItem.ID > 1); // First WorkItem in db initializer should be ID 1, so adding this should always create a larger ID
 			Assert.True(message.ID >= 1);
 			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
@@ -305,13 +305,13 @@ namespace Scrum.Web.IntegrationTests
 			workItem.Description += Environment.NewLine + "Please add a better bug description";
 			workItem.Due = DateTime.Now.AddDays(5);
 			Assert.Equal(EntityState.Modified, _client.WorkItems.GetEntityState(workItem));
-			Assert.True(_client.SaveChanges().Wait(TestTimeout));
+			Assert.True(_client.SaveChanges().Wait(ScrumClient.TestTimeout));
 			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
 
 			// Adds a link to an existing item
 			workItem.Subscribers.Add(gailUser);
 			Assert.Equal(EntityState.Modified, _client.WorkItems.GetEntityState(workItem));
-			Assert.True(_client.SaveChanges().Wait(TestTimeout));
+			Assert.True(_client.SaveChanges().Wait(ScrumClient.TestTimeout));
 			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
 
 			// Verify adding child objects works
@@ -325,13 +325,13 @@ namespace Scrum.Web.IntegrationTests
 			// Since WorkItem.Messages implement INotifyCollectionchanged, message2 should be added to the repository as soon as it's added to workItem.Messages,
 			// since workItem is being tracked:
 			Assert.Equal(EntityState.Added, _client.WorkItemMessages.GetEntityState(message2));
-			Assert.True(_client.SaveChanges().Wait(TestTimeout));
+			Assert.True(_client.SaveChanges().Wait(ScrumClient.TestTimeout));
 			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
 			Assert.Equal(EntityState.Unmodified, _client.WorkItemMessages.GetEntityState(message2));
 
 			// Clear all the local caches
 			Assert.Contains(message, _client.WorkItemMessages.Local);
-			Assert.True(_client.Clear().Wait(TestTimeout));
+			Assert.True(_client.Clear().Wait(ScrumClient.TestTimeout));
 			Assert.DoesNotContain(message, _client.WorkItemMessages.Local);
 			Assert.Equal(EntityState.Detached, _client.WorkItems.GetEntityState(workItem));
 			
@@ -341,7 +341,7 @@ namespace Scrum.Web.IntegrationTests
 										   .Include(wi => wi.Subscribers)
 										   .Include(wi => wi.Project.Include(p => p.Areas).Include(p => p.Versions))
 										   .Include(wi => wi.Messages.Include(m => m.Author).Include(m => m.WorkItem));
-			Assert.True(_client.InvokeAsync(query).Wait(TestTimeout));
+			Assert.True(_client.InvokeAsync(query).Wait(ScrumClient.TestTimeout));
 			WorkItem workItemQueried = query.Single();
 			Assert.Equal(2, workItemQueried.Messages.Count);
 			WorkItemMessage messageQueried = workItemQueried.Messages.ElementAt(1);
@@ -365,17 +365,17 @@ namespace Scrum.Web.IntegrationTests
 			//	Assert.True(_client.WorkItemMessages.Delete(workItemMessage));				
 			//}
 			//// REVIEW: There should be a cascade delete of the messages, but that may not be the case.
-			//Assert.True(_client.SaveChanges().Wait(TestTimeout));
+			//Assert.True(_client.SaveChanges().Wait(ScrumClient.TestTimeout));
 
 			//// Try running the same query again
-			//Assert.True(_client.InvokeAsync(query).Wait(TestTimeout));
+			//Assert.True(_client.InvokeAsync(query).Wait(ScrumClient.TestTimeout));
 			//workItemQueried = query.SingleOrDefault();
 			//Assert.Null(workItemQueried);
 
 			//// REVIEW: Not sure what this will do
 			//Assert.DoesNotContain(message, _client.WorkItemMessages.Local);
 
-			_client.Clear().Wait(TestTimeout);
+			_client.Clear().Wait(ScrumClient.TestTimeout);
 		}
 
 		// TODO tests:

@@ -69,7 +69,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ODataClientBasicIntegrationTests.cs" />
+    <Compile Include="ODataClientFunctionalTests.cs" />
+    <Compile Include="ODataClientBugTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ScrumClient.cs" />
   </ItemGroup>

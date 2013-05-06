@@ -24,6 +24,9 @@ namespace PD.Base.EntityRepository.ODataClient
 	internal class EntityTracker
 	{
 
+		[ThreadStatic]
+		private static bool s_changeTrackingDisabled;
+
 		private readonly ODataClient _oDataClient;
 		private readonly object _entity;
 		private readonly EntityTypeInfo _entityTypeInfo;
@@ -42,6 +45,15 @@ namespace PD.Base.EntityRepository.ODataClient
 		/// Tracks the link collections connected to <see cref="_entity"/>.
 		/// </summary>
 		private readonly LinkCollectionTracker[] _linkCollectionTrackers;
+
+		/// <summary>
+		/// Used to disable change tracking when entities are being deserialized.
+		/// </summary>
+		internal static bool ChangeTrackingDisabled
+		{
+			get { return s_changeTrackingDisabled; }
+			set { s_changeTrackingDisabled = value; }
+		}
 
 		internal EntityTracker(ODataClient oDataClient, object entity)
 		{
@@ -117,20 +129,23 @@ namespace PD.Base.EntityRepository.ODataClient
 
 		private void OnPropertyChanged(object sender, PropertyChangedEventArgs propertyChangedEventArgs)
 		{
-			// Mark the entity as updated, even though it might be changed to the same value as it started.
-			// When SaveChanges() is called, ReportChanges() will be called to determine whether the entity is actually changed.
-			_propertyChanged = true;
-			_oDataClient.DataServiceContext.UpdateObject(_entity);
-
-			// If this is a navigation property, ensure that the referenced entity is added to the correct repository.
-			string propertyName = propertyChangedEventArgs.PropertyName;
-			PropertyInfo navigationProperty = _entityTypeInfo.NavigationProperties.FirstOrDefault(p => p.Name.Equals(propertyName, StringComparison.Ordinal));
-			if (navigationProperty != null)
+			if (! ChangeTrackingDisabled)
 			{
-				object referencedEntity = navigationProperty.GetValue(_entity, null);
-				if (referencedEntity != null)
+				// Mark the entity as updated, even though it might be changed to the same value as it started.
+				// When SaveChanges() is called, ReportChanges() will be called to determine whether the entity is actually changed.
+				_propertyChanged = true;
+				_oDataClient.DataServiceContext.UpdateObject(_entity);
+
+				// If this is a navigation property, ensure that the referenced entity is added to the correct repository.
+				string propertyName = propertyChangedEventArgs.PropertyName;
+				PropertyInfo navigationProperty = _entityTypeInfo.NavigationProperties.FirstOrDefault(p => p.Name.Equals(propertyName, StringComparison.Ordinal));
+				if (navigationProperty != null)
 				{
-					_oDataClient.AddEntityGraph(referencedEntity);
+					object referencedEntity = navigationProperty.GetValue(_entity, null);
+					if (referencedEntity != null)
+					{
+						_oDataClient.AddEntityGraph(referencedEntity);
+					}
 				}
 			}
 		}

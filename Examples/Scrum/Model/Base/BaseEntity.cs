@@ -22,7 +22,7 @@ namespace Scrum.Model.Base
 	/// </summary>
 	/// <typeparam name="TId">The ID type - must be a valid ID type in entity framework and data services - signed numeric type, string, etc.</typeparam>
 	/// <typeparam name="TEntity">The entity type, which is derived from <c>BaseEntity</c></typeparam>
-	public abstract class BaseEntity<TId, TEntity> : Freezable, INotifyPropertyChanged, IValidatable, IEquatable<TEntity>
+	public abstract class BaseEntity<TId, TEntity> : Freezable, INotifyPropertyChanged, IEquatable<TEntity>
 		where TEntity : BaseEntity<TId, TEntity>
 	{
 		#region INotifyPropertyChanged Members
@@ -189,11 +189,6 @@ namespace Scrum.Model.Base
 //				collectionField = value;
 //#endif
 			}
-		}
-
-		public void Validate()
-		{
-			Validator.ValidateObject(this, new ValidationContext(this), true);
 		}
 
 	}

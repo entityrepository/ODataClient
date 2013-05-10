@@ -7,12 +7,15 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Data.Services.Client;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection;
+using PD.Base.PortableUtil.Model;
 
 namespace PD.Base.EntityRepository.ODataClient
 {
@@ -64,10 +67,10 @@ namespace PD.Base.EntityRepository.ODataClient
 			_entity = entity;
 			_entityTypeInfo = oDataClient.GetEntityTypeInfoFor(entity.GetType());
 
-			_linkCollectionTrackers = new LinkCollectionTracker[_entityTypeInfo.LinkProperties.Length];
-			for (int i = 0; i < _entityTypeInfo.LinkProperties.Length; ++i)
+			_linkCollectionTrackers = new LinkCollectionTracker[_entityTypeInfo.CollectionProperties.Length];
+			for (int i = 0; i < _entityTypeInfo.CollectionProperties.Length; ++i)
 			{
-				PropertyInfo property = _entityTypeInfo.LinkProperties[i];
+				PropertyInfo property = _entityTypeInfo.CollectionProperties[i];
 				IEnumerable collection = (IEnumerable) property.GetValue(_entity, null);
 				if (collection != null)
 				{
@@ -105,7 +108,11 @@ namespace PD.Base.EntityRepository.ODataClient
 			for (int i = 0; i < countStructuralProperties; ++i)
 			{
 				PropertyInfo property = _entityTypeInfo.StructuralProperties[i];
-				_unmodifiedStructuralPropertyValues[i] = property.GetValue(_entity, null);
+				try
+				{
+					_unmodifiedStructuralPropertyValues[i] = property.GetValue(_entity, null);
+				}
+				catch {}
 			}
 
 			int countNavigationProperties = _entityTypeInfo.NavigationProperties.Length;
@@ -113,7 +120,11 @@ namespace PD.Base.EntityRepository.ODataClient
 			for (int i = 0; i < countNavigationProperties; ++i)
 			{
 				PropertyInfo property = _entityTypeInfo.NavigationProperties[i];
-				_unmodifiedNavigationPropertyValues[i] = property.GetValue(_entity, null);
+				try
+				{
+					_unmodifiedNavigationPropertyValues[i] = property.GetValue(_entity, null);
+				}
+				catch {}
 			}
 
 			_propertyChanged = false;
@@ -175,7 +186,7 @@ namespace PD.Base.EntityRepository.ODataClient
 			return true;
 		}
 
-		internal bool AreSingleLinksUnmodified()
+		internal bool AreNavigationPropertiesUnmodified()
 		{
 			if ((_entity is INotifyPropertyChanged)
 				&& !_propertyChanged)
@@ -198,6 +209,23 @@ namespace PD.Base.EntityRepository.ODataClient
 				}
 			}
 			return true;
+		}
+
+		internal bool? IsNavigationPropertyModified(PropertyInfo property, object propertyValue)
+		{
+			if (_unmodifiedNavigationPropertyValues == null)
+			{
+				return null;
+			}
+
+			// Find the navigation property index
+			int index = Array.IndexOf(_entityTypeInfo.NavigationProperties, property);
+			if (index < 0)
+			{
+				return null;
+			}
+
+			return ! Equals(_unmodifiedNavigationPropertyValues[index], propertyValue);
 		}
 
 		internal bool AreLinkCollectionsUnmodified()
@@ -329,5 +357,62 @@ namespace PD.Base.EntityRepository.ODataClient
 				}
 			}
 		}
+
+		/// <summary>
+		/// Validate an object against the <see cref="ValidationAttribute"/>s on it.
+		/// </summary>
+		/// <param name="validationContext"></param>
+		/// <returns></returns>
+		internal IEnumerable<ValidationException> Validate(ValidationContext validationContext)
+		{
+			if (_entityTypeInfo.PropertyValidation.Length == 0)
+			{
+				// No validators to check, return fast
+				return Enumerable.Empty<ValidationException>();
+			}
+
+			bool isAdded = false;
+			bool isModified = false;
+			object value;
+			if (validationContext.Items.TryGetValue(EntityValidation.IsAddedKey, out value))
+			{
+				isAdded = Convert.ToBoolean(value);
+			}
+			if (validationContext.Items.TryGetValue(EntityValidation.IsModifiedKey, out value))
+			{
+				isModified = Convert.ToBoolean(value);
+			}
+
+			// Validate all properties with ValidationAttributes on them
+			List<ValidationException> exceptions = new List<ValidationException>();
+			foreach (var validationInfo in _entityTypeInfo.PropertyValidation)
+			{
+				validationContext.MemberName = validationInfo.Property.Name;
+				object propertyValue = validationInfo.Property.GetValue(_entity, null);
+
+				// Handle the case where a navigation property is absent b/c the property was not included
+				if ((propertyValue == null)
+					&& (validationInfo.Category == EntityTypeInfo.PropertyCategory.Navigation)
+					&& !isAdded && isModified
+					&& (IsNavigationPropertyModified(validationInfo.Property, propertyValue) == false))
+				{
+					// Property is null, but it's not changed, so skip validation of it
+					continue;
+				}
+
+				foreach (var validationAttribute in validationInfo.ValidationAttributes)
+				{
+					ValidationResult result = validationAttribute.GetValidationResult(propertyValue, validationContext);
+					if (!ReferenceEquals(ValidationResult.Success, result))
+					{
+						exceptions.Add(new ValidationException(result, validationAttribute, propertyValue));
+					}
+				}
+			}
+
+			validationContext.MemberName = null;
+			return exceptions;
+		}
+
 	}
 }

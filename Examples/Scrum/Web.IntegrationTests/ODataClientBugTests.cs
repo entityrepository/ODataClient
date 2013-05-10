@@ -59,12 +59,12 @@ namespace Scrum.Web.IntegrationTests
 			Assert.NotEmpty(workItem.Areas);
 			Assert.NotEmpty(workItem.AssignedTo);
 			Assert.NotEmpty(workItem.Project.Areas);
-			Assert.Equal(2, workItem.Project.Areas.Count);
+			Assert.Equal(3, workItem.Project.Areas.Count);
 			Assert.Equal(4, workItem.Project.Versions.Count);
 
 			// Run the extensive query again...
 			Assert.True(_client.InvokeAsync(extensiveQuery).Wait(ScrumClient.TestTimeout));
-			Assert.Equal(2, workItem.Project.Areas.Count);
+			Assert.Equal(3, workItem.Project.Areas.Count);
 			Assert.Equal(4, workItem.Project.Versions.Count);
 
 			// Verify that no changes have been made.

@@ -246,7 +246,7 @@ namespace PD.Base.EntityRepository.ODataClient
 					if (_entityTrackers.TryGetValue(entity, out entityTracker))
 					{
 						return entityTracker.AreStructuralPropertiesUnmodified()
-							   && entityTracker.AreSingleLinksUnmodified()
+							   && entityTracker.AreNavigationPropertiesUnmodified()
 						       && entityTracker.AreLinkCollectionsUnmodified()
 							       ? EntityState.Unmodified
 							       : EntityState.Modified;

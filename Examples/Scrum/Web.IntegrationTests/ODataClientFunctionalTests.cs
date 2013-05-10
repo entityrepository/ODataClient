@@ -79,7 +79,13 @@ namespace Scrum.Web.IntegrationTests
 		[Fact]
 		public void TestAsynchronousMultiInclude()
 		{
-			var query = _client.WorkItems.Include(wi => wi.Areas).Include(wi => wi.TimeLog).Include(wi => wi.Subscribers).Include(wi => wi.AssignedTo);
+			var query =
+				_client.WorkItems.Include(wi => wi.Areas)
+				       .Include(wi => wi.TimeLog)
+				       .Include(wi => wi.Subscribers)
+				       .Include(wi => wi.AssignedTo)
+				       .Include(wi => wi.Status)
+				       .Include(wi => wi.Priority);
 			WorkItem workItem = null;
 			var queryCompletion = _client.InvokeAsync(query);
 			var completion = queryCompletion.ContinueWith(
@@ -278,7 +284,8 @@ namespace Scrum.Web.IntegrationTests
 				                    Areas = { loggingArea },
 				                    AssignedTo = { joeUser },
 				                    Title = "Logger isn't logging",
-				                    Description = "I think this is because it's not configured in app.config."
+				                    Description = "I think this is because it's not configured in app.config.",
+									AffectsVersions = { affectsVersions.First() }
 			                    };
 			// Create an associated message
 			WorkItemMessage message = new WorkItemMessage(workItem, joeUser)
@@ -295,6 +302,7 @@ namespace Scrum.Web.IntegrationTests
 			Assert.Equal(0, message.ID); // New
 			Assert.Equal(EntityState.Added, _client.WorkItems.GetEntityState(workItem));
 			Assert.Equal(EntityState.Added, _client.WorkItemMessages.GetEntityState(message));
+			Assert.Equal(9, _client.ReportChanges(null, null)); // 2 entities and 7 links
 			Assert.True(_client.SaveChanges().Wait(ScrumClient.TestTimeout));
 			Assert.True(workItem.ID > 1); // First WorkItem in db initializer should be ID 1, so adding this should always create a larger ID
 			Assert.True(message.ID >= 1);
@@ -376,6 +384,115 @@ namespace Scrum.Web.IntegrationTests
 			//Assert.DoesNotContain(message, _client.WorkItemMessages.Local);
 
 			_client.Clear().Wait(ScrumClient.TestTimeout);
+		}
+
+		[Fact]
+		public void TestStructuralPropertyValidation()
+		{
+			// Setup
+
+			_client.Clear().Wait(ScrumClient.TestTimeout);
+
+			// Fetch a work item, and its project
+			var workItemQuery = _client.WorkItems.Include(wi => wi.Project).Include(wi => wi.Areas).Take(1);
+			_client.InvokeAsync(workItemQuery).Wait(ScrumClient.TestTimeout);
+			WorkItem workItem = workItemQuery.First();
+			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
+
+			// Test
+
+			// Clear a [Required] structural property
+			workItem.Creator = null;
+			Assert.Equal(EntityState.Modified, _client.WorkItems.GetEntityState(workItem));
+			Assert.Throws<AggregateException>(() => _client.SaveChanges().Wait(ScrumClient.TestTimeout));
+			// Setup
+			_client.WorkItems.Revert(workItem);
+
+			// Change the project key
+			// Alphabetic upper-cased keys required by the [RegularExpression] attr
+			workItem.Project.Key = "1";
+			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
+			Assert.Equal(EntityState.Modified, _client.Projects.GetEntityState(workItem.Project));
+			Assert.Throws<AggregateException>(() => _client.SaveChanges());
+		}
+
+		public void TestReferencePropertyValidationForExistingEntities()
+		{
+			// Setup
+			_client.Clear().Wait(ScrumClient.TestTimeout);
+			// Fetch a work item, and its project
+			var workItemQuery = _client.WorkItems.Include(wi => wi.Project).Include(wi => wi.Areas).Take(1);
+			_client.InvokeAsync(workItemQuery).Wait(ScrumClient.TestTimeout);
+			WorkItem workItem = workItemQuery.First();
+			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
+
+			// Test #1
+			// Clear the project from the WorkItem - should fail, as it's [Required]
+			workItem.Project = null;
+			Assert.Equal(EntityState.Modified, _client.WorkItems.GetEntityState(workItem));
+			Assert.Throws<AggregateException>(() => _client.SaveChanges());
+		}
+
+		public void TestReferencePropertyValidationForNewEntities()
+		{
+			// Setup
+			var projectQuery = _client.Projects.Where(p => p.Key == "INFRA").Include(p => p.Areas);
+			var userQuery = _client.Users.Where(u => u.UserName == "joe");
+			Assert.True(_client.InvokeAsync(projectQuery, userQuery).Wait(ScrumClient.TestTimeout));
+			Project infraProject = projectQuery.Single();
+			User joeUser = userQuery.Single();
+
+			// Test
+			// Set no properties
+			WorkItem workItem = new WorkItem();
+			Assert.Throws<AggregateException>(() => _client.SaveChanges());
+
+			// Set a few, but not all, required properties
+			workItem.Project = infraProject;
+			workItem.Creator = joeUser;
+			workItem.Created = DateTime.Now;
+			workItem.Title = "Test workitem - should be deleted";
+			Assert.Throws<AggregateException>(() => _client.SaveChanges());
+
+			// Set the remaining required properties
+			workItem.Priority = Priority.Optional;
+			workItem.Status = Status.Unknown;
+			Assert.True(_client.SaveChanges().Wait(ScrumClient.TestTimeout));
+
+			// Cleanup - delete the workItem just added
+			_client.WorkItems.Delete(workItem);
+			Assert.True(_client.SaveChanges().Wait(ScrumClient.TestTimeout));
+		}
+
+		public void TestThatSaveDoesntNullOutReferencePropertiesNotInObjectGraph()
+		{
+			// Setup
+			_client.Clear().Wait(ScrumClient.TestTimeout);
+			// Fetch a work item, without any connected objects
+			var workItemQuery = _client.WorkItems.Take(1);
+			_client.InvokeAsync(workItemQuery).Wait(ScrumClient.TestTimeout);
+			WorkItem workItem = workItemQuery.First();
+			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
+			string previousTitle = workItem.Title;
+			Assert.Null(workItem.Project);
+			Assert.Null(workItem.Creator);
+			Assert.Empty(workItem.Areas);
+
+			// Test: Change the title
+			workItem.Title = "Unit test title";
+			Assert.Equal(EntityState.Modified, _client.WorkItems.GetEntityState(workItem));
+			Assert.True(_client.SaveChanges().Wait(ScrumClient.TestTimeout));
+
+			// Re-query with connected objects, to ensure that they're all there
+			workItemQuery = _client.WorkItems.Include(wi => wi.Project).Include(wi => wi.Areas).Include(wi => wi.Creator).Take(1);
+			_client.InvokeAsync(workItemQuery).Wait(ScrumClient.TestTimeout);
+			Assert.NotNull(workItem.Project);
+			Assert.NotNull(workItem.Creator);
+			Assert.NotEmpty(workItem.Areas);
+
+			// Cleanup: Change the title back
+			workItem.Title = previousTitle;
+			Assert.True(_client.SaveChanges().Wait(ScrumClient.TestTimeout));
 		}
 
 		// TODO tests:

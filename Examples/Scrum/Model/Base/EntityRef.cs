@@ -35,7 +35,16 @@ namespace Scrum.Model.Base
 		public TKey ForeignKey
 		{
 			get { return _foreignKey; }
-			set { _foreignKey = value; }
+			set
+			{
+				_foreignKey = value;
+				_isSet = ! Equals(_foreignKey, default(TKey));
+			}
+		}
+
+		public bool HasReference
+		{
+			get { return _isSet; }
 		}
 
 		public TEntity Entity
@@ -86,7 +95,8 @@ namespace Scrum.Model.Base
 
 		private void LoadEntity()
 		{
-			throw new NotImplementedException();
+			// Currently this does nothing
+			//throw new NotImplementedException();
 		}
 
 	}

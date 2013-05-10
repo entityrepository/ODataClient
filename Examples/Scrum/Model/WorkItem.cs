@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using PD.Base.PortableUtil.Enum;
 using Scrum.Model.Base;
 
 namespace Scrum.Model
@@ -24,8 +25,8 @@ namespace Scrum.Model
 		private ICollection<ProjectVersion> _fixVersions;
 		private ICollection<WorkItemMessage> _messages;
 		// REVIEW: Perhaps the KeyFunc should be managed by an EntityManager? Or be moved to a base class.
-		private EntityRef<Priority, short> _priority = new EntityRef<Priority, short>(Priority.KeyFunc);
-		private EntityRef<Status, short> _status = new EntityRef<Status, short>(Status.KeyFunc);
+		private DbEnumRef<Priority, short> _priority = new DbEnumRef<Priority, short>();
+		private DbEnumRef<Status, short> _status = new DbEnumRef<Status, short>();
 		private EntityRef<User, int> _creator = new EntityRef<User, int>(user => user.ID);
 		private ICollection<User> _subscribers;
 		private ICollection<WorkItemTimeLog> _timeLog;
@@ -47,6 +48,7 @@ namespace Scrum.Model
 		public WorkItem()
 		{}
 
+		[Required]
 		public Project Project { get; set; }
 
 		public WorkItem Parent { get; set; }
@@ -66,12 +68,10 @@ namespace Scrum.Model
 		[Required]
 		public Priority Priority
 		{
-			get { return _priority.Entity; }
-			set { _priority.Entity = value; }
+			get { return _priority.Value; }
+			set { _priority.Value = value; }
 		}
 
-		// REVIEW: This could be made private for EntityFramework - however it can't be made private for WCF Data Services.
-		// Need to see if this could be private for Web Api oData...
 		//public short PriorityId
 		//{
 		//	get { return _priority.ForeignKey; }
@@ -81,16 +81,14 @@ namespace Scrum.Model
 		[Required]
 		public Status Status
 		{
-			get { return _status.Entity; }
-			set { _status.Entity = value; }
+			get { return _status.Value; }
+			set { _status.Value = value; }
 		}
-
-		//// REVIEW: Ditto
-		//public short StatusId
-		//{
-		//	get { return _status.ForeignKey; }
-		//	set { _status.ForeignKey = value; }
-		//}
+		public short StatusId
+		{
+			get { return _status.Id; }
+			set { _status.Id = value; }
+		}
 
 		public virtual ICollection<ProjectVersion> AffectsVersions
 		{

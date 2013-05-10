@@ -8,6 +8,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel.DataAnnotations;
 using System.Data.Services.Client;
 using System.Data.Services.Common;
 using System.Diagnostics;
@@ -683,22 +684,39 @@ namespace PD.Base.EntityRepository.ODataClient
 		private int ValidateChangedEntities()
 		{
 			int countChanges = 0;
-			List<Exception> validationExceptions = new List<Exception>();
+			List<ValidationException> validationExceptions = new List<ValidationException>();
 			foreach (EntityDescriptor entityDescriptor in _dataServiceContext.Entities)
 			{
 				EntityStates state = entityDescriptor.State;
-				if ((EntityStates.Added == (state & EntityStates.Added)) || (EntityStates.Modified == (state & EntityStates.Modified)))
+				bool isAdded = EntityStates.Added == (state & EntityStates.Added);
+				bool isModified = EntityStates.Modified == (state & EntityStates.Modified);
+				if (isAdded || isModified)
 				{
-					IValidatable validatable = entityDescriptor.Entity as IValidatable;
+					object entity = entityDescriptor.Entity;
+					var validationContextValues = new Dictionary<object, object>(2);
+					validationContextValues[EntityValidation.IsModifiedKey] = isModified;
+					validationContextValues[EntityValidation.IsAddedKey] = isAdded;
+					System.ComponentModel.DataAnnotations.ValidationContext validationContext = new System.ComponentModel.DataAnnotations.ValidationContext(entity, null, validationContextValues);
+
+					// Validate attributes, but don't require [Required] when the full object graph isn't loaded
+					BaseRepository repository;
+					if (RepositoriesByType.TryGetValue(entity.GetType(), out repository))
+					{
+						EntityTracker entityTracker = repository.GetEntityTracker(entity);
+						if (entityTracker != null)
+						{
+							validationExceptions.AddRange(entityTracker.Validate(validationContext));
+						}
+					}
+
+					// Allow the entity to validate itself, Validate attributes, but don't require [Required] when the full object graph isn't loaded
+					IValidatable validatable = entity as IValidatable;
 					if (validatable != null)
 					{
-						try
+						var validationResults = validatable.Validate(validationContext);
+						foreach (ValidationResult result in validationResults)
 						{
-							validatable.Validate();							
-						}
-						catch (Exception vex)
-						{
-							validationExceptions.Add(vex);
+							validationExceptions.Add(new ValidationException(result, null, entity));
 						}
 					}
 					countChanges++;
@@ -883,7 +901,7 @@ namespace PD.Base.EntityRepository.ODataClient
 			}
 
 			// Add links for all connected properties
-			foreach (PropertyInfo property in entityTypeInfo.LinkProperties)
+			foreach (PropertyInfo property in entityTypeInfo.CollectionProperties)
 			{
 				IEnumerable collection = (IEnumerable) property.GetValue(entity, null);
 				if (collection != null)

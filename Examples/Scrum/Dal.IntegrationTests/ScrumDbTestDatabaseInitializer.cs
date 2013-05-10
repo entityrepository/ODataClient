@@ -127,7 +127,15 @@ namespace Scrum.Dal.IntegrationTests
 			dwProject.Versions.Add(new ProjectVersion() { Name = "1.0" });
 			dwProject.Versions.Add(new ProjectVersion() { Name = "Backlog" });
 
-			scrumDb.SaveChanges();
+			try
+			{
+				scrumDb.SaveChanges();
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine(ex);
+				throw new InvalidOperationException("Failure saving seed data", ex);
+			}
 		}
 
 		// TODO: Move this to Base.Data

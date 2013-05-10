@@ -26,6 +26,7 @@ namespace Scrum.Model
 
 		#endregion
 
+		[RegularExpression("^[A-Z]{2,20}$", ErrorMessage = "Project key must be all CAPs, 2 to 20 letters.")]
 		[StringLength(20, MinimumLength = 1)]
 		public string Key
 		{

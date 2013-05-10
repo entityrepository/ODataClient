@@ -21,16 +21,43 @@ namespace Scrum.Dal
 		public ScrumDb()
 			: base(DatabaseName)
 		{
-			Configuration.AutoDetectChangesEnabled = true;
+			Configuration.AutoDetectChangesEnabled = false;
 			Configuration.LazyLoadingEnabled = false;
 			Configuration.ProxyCreationEnabled = false;
 
 			// By default, this is on, but should be disabled for data services server context.
 			Configuration.ValidateOnSaveEnabled = true;
+
+			AttachDbEnums();
+		}
+
+		private void AttachDbEnums()
+		{
+			if (! Database.Exists())
+			{
+				// Skip this when the database doesn't exist.
+				return;
+			}
+
+			foreach (var priority in Scrum.Model.Priority.All)
+			{
+				Priority.Attach(priority);
+			}
+			foreach (var status in Scrum.Model.Status.All)
+			{
+				Status.Attach(status);
+			}
+		}
+
+		protected override System.Data.Entity.Validation.DbEntityValidationResult ValidateEntity(System.Data.Entity.Infrastructure.DbEntityEntry entityEntry, System.Collections.Generic.IDictionary<object, object> items)
+		{
+			// TODO: We could do our custom validation here, and turn validation back on...
+			return base.ValidateEntity(entityEntry, items);
 		}
 
 		public override int SaveChanges()
 		{
+			ChangeTracker.DetectChanges();
 			return base.SaveChanges();
 		}
 

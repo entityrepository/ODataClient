@@ -120,7 +120,6 @@
   <ItemGroup>
     <Compile Include="Base\BaseEntity.cs" />
     <Compile Include="Base\EntityRef.cs" />
-    <Compile Include="Base\RequiredEntityReferenceAttribute.cs" />
     <Compile Include="Client.cs" />
     <Compile Include="Priority.cs" />
     <Compile Include="Project.cs" />

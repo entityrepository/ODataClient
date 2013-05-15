@@ -369,7 +369,9 @@ namespace PD.Base.EntityRepository.ODataClient
 #else
 				s_trace.TraceInformation("No changes in SaveChanges().");
 #endif
-				return new Task(() => {});
+				Task doNothingTask = new Task(() => { });
+				doNothingTask.Start();
+				return doNothingTask;
 			}
 
 			LogChanges("Saving changes:");

@@ -7,6 +7,7 @@
 
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using PD.Base.EntityRepository.ODataClient;
 using Scrum.Model;
 using Xunit;
@@ -35,7 +36,7 @@ namespace Scrum.Web.IntegrationTests
 		/// Previously LinkCollectionTracker was throwing an exception during the deserialization of a second query.
 		/// </summary>
 		[Fact]
-		public void TestSimpleQueryFollowedByLargerQueriesForSameRootObjects()
+		public void SimpleQueryFollowedByLargerQueriesForSameRootObjects()
 		{
 			var simpleQuery = _client.WorkItems.Take(1).Include(wi => wi.Project.Include(p => p.Versions));
 			Assert.True(_client.InvokeAsync(simpleQuery).Wait(ScrumClient.TestTimeout));
@@ -69,6 +70,23 @@ namespace Scrum.Web.IntegrationTests
 
 			// Verify that no changes have been made.
 			Assert.Equal(0, _client.ReportChanges(null, null));
+		}
+
+		[Fact]
+		public void OnCompleteIsCalledWhenThereAreNoChanges()
+		{
+			Assert.True(_client.Clear().Wait(ScrumClient.TestTimeout));
+
+			// Verify that no changes have been made.
+			Assert.Equal(0, _client.ReportChanges(null, null));
+
+			bool continuationCalled = false;
+			Task saveChangesTask = _client.SaveChanges();
+			Task continuationTask = saveChangesTask.ContinueWith(task => { continuationCalled = true; }, TaskContinuationOptions.OnlyOnRanToCompletion);
+			Assert.True(continuationTask.Wait(2000));
+			Assert.True(continuationCalled);
+			Assert.True(saveChangesTask.IsCompleted);
+			Assert.False(saveChangesTask.IsFaulted);
 		}
 
 	}

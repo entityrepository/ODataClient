@@ -34,7 +34,7 @@ namespace PD.Base.EntityRepository.ODataClient
 	/// An <see cref="IDataContextImpl"/> implementation that wraps a WCF Data Services client.
 	/// </summary>
 	// Named repositories are necessary b/c we could have multiple tables backed by the same type
-	// Also TODO: Preview items
+	// TODO: Preview items
 	// TODO: Delayed load (resolve a referenced object that wasn't fetched initially)
 	public class ODataClient : IDataContextImpl, IDisposable, ITypeResolver
 	{
@@ -304,82 +304,97 @@ namespace PD.Base.EntityRepository.ODataClient
 		/// <inheritdoc />
 		public Task<ReadOnlyCollection<IRequest>> InvokeAsync(params IRequest[] requests)
 		{
-			// Convert the queries into DataServiceRequests
-			ODataClientRequest[] internalRequests = requests.Cast<ODataClientRequest>().ToArray();
-#if SILVERLIGHT
-			Debug.WriteLine("Issuing batch requests:\n  {0}", string.Join("\n  ", (IEnumerable<ODataClientRequest>) internalRequests));
-#else
-			if (s_trace.Switch.ShouldTrace(TraceEventType.Information))
+			lock (this)
 			{
-				s_trace.TraceInformation("Issuing batch requests:\n  {0}", string.Join("\n  ", (IEnumerable<ODataClientRequest>) internalRequests));
-			}
+
+				// Convert the queries into DataServiceRequests
+				ODataClientRequest[] internalRequests = requests.Cast<ODataClientRequest>().ToArray();
+#if SILVERLIGHT
+				Debug.WriteLine("Issuing batch requests:\n  {0}", string.Join("\n  ", (IEnumerable<ODataClientRequest>) internalRequests));
+#else
+				if (s_trace.Switch.ShouldTrace(TraceEventType.Information))
+				{
+					s_trace.TraceInformation("Issuing batch requests:\n  {0}", string.Join("\n  ", (IEnumerable<ODataClientRequest>) internalRequests));
+				}
 #endif
 
-			DataServiceRequest[] dataServiceRequests = internalRequests.Select(internalRequest => internalRequest.SendingRequest()).ToArray();
-			Task<DataServiceResponse> taskResponse =
-				Task.Factory.FromAsync<DataServiceRequest[], DataServiceResponse>((reqs, callback, state) => _dataServiceContext.BeginExecuteBatch(callback, state, reqs),
-				                                                                  _dataServiceContext.EndExecuteBatch,
-				                                                                  dataServiceRequests,
-																				  internalRequests);
-			return taskResponse.ContinueWith<ReadOnlyCollection<IRequest>>(ProcessBatchResponse);
+				DataServiceRequest[] dataServiceRequests = internalRequests.Select(internalRequest => internalRequest.SendingRequest()).ToArray();
+				Task<DataServiceResponse> taskResponse =
+					Task.Factory.FromAsync<DataServiceRequest[], DataServiceResponse>((reqs, callback, state) => _dataServiceContext.BeginExecuteBatch(callback, state, reqs),
+					                                                                  _dataServiceContext.EndExecuteBatch,
+					                                                                  dataServiceRequests,
+					                                                                  internalRequests);
+				return taskResponse.ContinueWith<ReadOnlyCollection<IRequest>>(ProcessBatchResponse);
+
+			}
 		}
 
 		/// <inheritdoc />
 		public int ReportChanges(Action<EntityState, object> onChangedEntity, Action<EntityState, object, string, object> onChangedLink)
 		{
-			// This just updates the DataServiceContext with changes based on the current state.
-			foreach (var editRepository in _editRepositories.Values)
+			lock (this)
 			{
-				editRepository.ReportChanges();
-			}
 
-			int countChanges = 0;
-			foreach (EntityDescriptor entityDescriptor in DataServiceContext.Entities.Where(ed => ed.State != EntityStates.Unchanged))
-			{
-				if (onChangedEntity != null)
+				// This just updates the DataServiceContext with changes based on the current state.
+				foreach (var editRepository in _editRepositories.Values)
 				{
-					onChangedEntity(EntityStateFromDataServiceState(entityDescriptor.State), entityDescriptor.Entity);
+					editRepository.ReportChanges();
 				}
-				countChanges++;
-			}
-			foreach (LinkDescriptor linkDescriptor in DataServiceContext.Links.Where(l => l.State != EntityStates.Unchanged))
-			{
-				if (onChangedLink != null)
+
+				int countChanges = 0;
+				foreach (EntityDescriptor entityDescriptor in DataServiceContext.Entities.Where(ed => ed.State != EntityStates.Unchanged))
 				{
-					onChangedLink(EntityStateFromDataServiceState(linkDescriptor.State), linkDescriptor.Source, linkDescriptor.SourceProperty, linkDescriptor.Target);
+					if (onChangedEntity != null)
+					{
+						onChangedEntity(EntityStateFromDataServiceState(entityDescriptor.State), entityDescriptor.Entity);
+					}
+					countChanges++;
 				}
-				countChanges++;
+				foreach (LinkDescriptor linkDescriptor in DataServiceContext.Links.Where(l => l.State != EntityStates.Unchanged))
+				{
+					if (onChangedLink != null)
+					{
+						onChangedLink(EntityStateFromDataServiceState(linkDescriptor.State), linkDescriptor.Source, linkDescriptor.SourceProperty, linkDescriptor.Target);
+					}
+					countChanges++;
+				}
+				return countChanges;
+
 			}
-			return countChanges;
 		}
 
 		/// <inheritdoc />
 		public Task SaveChanges()
 		{
-			foreach (var editRepository in _editRepositories.Values)
+			lock (this)
 			{
-				editRepository.ReportChanges();
-			}
 
-			int countChanges = ValidateChangedEntities();
-			if (countChanges == 0)
-			{
+				foreach (var editRepository in _editRepositories.Values)
+				{
+					editRepository.ReportChanges();
+				}
+
+				int countChanges = ValidateChangedEntities();
+				if (countChanges == 0)
+				{
 #if SILVERLIGHT
-				Debug.WriteLine("No changes in SaveChanges().");
+					Debug.WriteLine("No changes in SaveChanges().");
 #else
-				s_trace.TraceInformation("No changes in SaveChanges().");
+					s_trace.TraceInformation("No changes in SaveChanges().");
 #endif
-				Task doNothingTask = new Task(() => { });
-				doNothingTask.Start();
-				return doNothingTask;
-			}
+					Task doNothingTask = new Task(() => { });
+					doNothingTask.Start();
+					return doNothingTask;
+				}
 
-			LogChanges("Saving changes:");
-			Task<DataServiceResponse> taskResponse =
-				Task.Factory.FromAsync<DataServiceResponse>((callback, state) => _dataServiceContext.BeginSaveChanges(SaveChangesOptions.Batch, callback, state),
-				                                            _dataServiceContext.EndSaveChanges,
-				                                            null); // state == null for now...
-			return taskResponse.ContinueWith(ProcessSaveChangesResponse);
+				LogChanges("Saving changes:");
+				Task<DataServiceResponse> taskResponse =
+					Task.Factory.FromAsync<DataServiceResponse>((callback, state) => _dataServiceContext.BeginSaveChanges(SaveChangesOptions.Batch, callback, state),
+					                                            _dataServiceContext.EndSaveChanges,
+					                                            null); // state == null for now...
+				return taskResponse.ContinueWith(ProcessSaveChangesResponse);
+
+			}
 		}
 
 		/// <inheritdoc />
@@ -635,107 +650,117 @@ namespace PD.Base.EntityRepository.ODataClient
 
 		private ReadOnlyCollection<IRequest> ProcessBatchResponse(Task<DataServiceResponse> responseTask)
 		{
-			// Extract the requests from the async state property
-			ODataClientRequest[] internalRequests = (ODataClientRequest[]) responseTask.AsyncState;
+			lock (this)
+			{
 
-			// batchException is an exception that affects all requests in the batch
-			Exception batchException = null;
-			if (responseTask.IsFaulted)
-			{
-				batchException = responseTask.GetException();
-			}
-			else
-			{
-				DataServiceResponse batchResponse = responseTask.Result;
-				try
+				// Extract the requests from the async state property
+				ODataClientRequest[] internalRequests = (ODataClientRequest[]) responseTask.AsyncState;
+
+				// batchException is an exception that affects all requests in the batch
+				Exception batchException = null;
+				if (responseTask.IsFaulted)
 				{
-					// Check for failures that affect all requests in the batch
-					if (!batchResponse.IsBatchResponse)
+					batchException = responseTask.GetException();
+				}
+				else
+				{
+					DataServiceResponse batchResponse = responseTask.Result;
+					try
 					{
-						throw new CommunicationException("OData communications error - expected batch response, but received non-batch  " + batchResponse);
-					}
-					if ((batchResponse.BatchStatusCode < 200)
-					    || (batchResponse.BatchStatusCode > 299))
-					{
-						throw new CommunicationException("OData communications error - batch call returned batch status code " + batchResponse.BatchStatusCode);
-					}
+						// Check for failures that affect all requests in the batch
+						if (!batchResponse.IsBatchResponse)
+						{
+							throw new CommunicationException("OData communications error - expected batch response, but received non-batch  " + batchResponse);
+						}
+						if ((batchResponse.BatchStatusCode < 200)
+						    || (batchResponse.BatchStatusCode > 299))
+						{
+							throw new CommunicationException("OData communications error - batch call returned batch status code " + batchResponse.BatchStatusCode);
+						}
 
-					foreach (OperationResponse operationResponse in batchResponse)
+						foreach (OperationResponse operationResponse in batchResponse)
+						{
+							ODataClientRequest request = internalRequests.Single(req => req.IsRequestFor(operationResponse));
+							request.HandleResponse(this, operationResponse);
+						}
+					}
+					catch (CommunicationException comEx)
 					{
-						ODataClientRequest request = internalRequests.Single(req => req.IsRequestFor(operationResponse));
-						request.HandleResponse(this, operationResponse);
+						batchException = comEx;
 					}
 				}
-				catch (CommunicationException comEx)
-				{
-					batchException = comEx;
-				}
-			}
 
-			if (batchException != null)
-			{
-				foreach (ODataClientRequest oDataClientRequest in internalRequests)
+				if (batchException != null)
 				{
-					oDataClientRequest.Failed(batchException);
+					foreach (ODataClientRequest oDataClientRequest in internalRequests)
+					{
+						oDataClientRequest.Failed(batchException);
+					}
 				}
-			}
 
-			return new ReadOnlyCollection<IRequest>(internalRequests);
+				return new ReadOnlyCollection<IRequest>(internalRequests);
+
+			}
 		}
 
 		private int ValidateChangedEntities()
 		{
-			int countChanges = 0;
-			List<ValidationException> validationExceptions = new List<ValidationException>();
-			foreach (EntityDescriptor entityDescriptor in _dataServiceContext.Entities)
+			lock (this)
 			{
-				EntityStates state = entityDescriptor.State;
-				bool isAdded = EntityStates.Added == (state & EntityStates.Added);
-				bool isModified = EntityStates.Modified == (state & EntityStates.Modified);
-				if (isAdded || isModified)
+
+				int countChanges = 0;
+				List<ValidationException> validationExceptions = new List<ValidationException>();
+				foreach (EntityDescriptor entityDescriptor in _dataServiceContext.Entities)
 				{
-					object entity = entityDescriptor.Entity;
-					var validationContextValues = new Dictionary<object, object>(2);
-					validationContextValues[EntityValidation.IsModifiedKey] = isModified;
-					validationContextValues[EntityValidation.IsAddedKey] = isAdded;
-					System.ComponentModel.DataAnnotations.ValidationContext validationContext = new System.ComponentModel.DataAnnotations.ValidationContext(entity, null, validationContextValues);
-
-					// Validate attributes, but don't require [Required] when the full object graph isn't loaded
-					BaseRepository repository;
-					if (RepositoriesByType.TryGetValue(entity.GetType(), out repository))
+					EntityStates state = entityDescriptor.State;
+					bool isAdded = EntityStates.Added == (state & EntityStates.Added);
+					bool isModified = EntityStates.Modified == (state & EntityStates.Modified);
+					if (isAdded || isModified)
 					{
-						EntityTracker entityTracker = repository.GetEntityTracker(entity);
-						if (entityTracker != null)
-						{
-							validationExceptions.AddRange(entityTracker.Validate(validationContext));
-						}
-					}
+						object entity = entityDescriptor.Entity;
+						var validationContextValues = new Dictionary<object, object>(2);
+						validationContextValues[EntityValidation.IsModifiedKey] = isModified;
+						validationContextValues[EntityValidation.IsAddedKey] = isAdded;
+						System.ComponentModel.DataAnnotations.ValidationContext validationContext = new System.ComponentModel.DataAnnotations.ValidationContext(entity, null, validationContextValues);
 
-					// Allow the entity to validate itself, Validate attributes, but don't require [Required] when the full object graph isn't loaded
-					IValidatable validatable = entity as IValidatable;
-					if (validatable != null)
-					{
-						var validationResults = validatable.Validate(validationContext);
-						foreach (ValidationResult result in validationResults)
+						// Validate attributes, but don't require [Required] when the full object graph isn't loaded
+						BaseRepository repository;
+						if (RepositoriesByType.TryGetValue(entity.GetType(), out repository))
 						{
-							validationExceptions.Add(new ValidationException(result, null, entity));
+							EntityTracker entityTracker = repository.GetEntityTracker(entity);
+							if (entityTracker != null)
+							{
+								validationExceptions.AddRange(entityTracker.Validate(validationContext));
+							}
 						}
+
+						// Allow the entity to validate itself, Validate attributes, but don't require [Required] when the full object graph isn't loaded
+						IValidatable validatable = entity as IValidatable;
+						if (validatable != null)
+						{
+							var validationResults = validatable.Validate(validationContext);
+							foreach (ValidationResult result in validationResults)
+							{
+								validationExceptions.Add(new ValidationException(result, null, entity));
+							}
+						}
+						countChanges++;
 					}
-					countChanges++;
+					else if (EntityStates.Deleted == (state & EntityStates.Deleted))
+					{
+						countChanges++;
+					}
 				}
-				else if (EntityStates.Deleted == (state & EntityStates.Deleted))
+
+				if (validationExceptions.Count > 0)
 				{
-					countChanges++;
+					throw new AggregateException("One or more added or modified entities failed validation.", validationExceptions);
 				}
-			}
 
-			if (validationExceptions.Count > 0)
-			{
-				throw new AggregateException("One or more added or modified entities failed validation.", validationExceptions);
-			}
+				countChanges += _dataServiceContext.Links.Count(linkDescriptor => linkDescriptor.State != EntityStates.Unchanged);
+				return countChanges;
 
-			countChanges += _dataServiceContext.Links.Count(linkDescriptor => linkDescriptor.State != EntityStates.Unchanged);
-			return countChanges;
+			}
 		}
 
 		/// <summary>
@@ -784,232 +809,247 @@ namespace PD.Base.EntityRepository.ODataClient
 
 		private void ProcessSaveChangesResponse(Task<DataServiceResponse> responseTask)
 		{
-			DataServiceResponse batchResponse = responseTask.Result;
-			// Check for failures that affect all requests in the batch
-			if (!batchResponse.IsBatchResponse)
+			lock (this)
 			{
-				throw new CommunicationException("OData communications error - expected batch response, but received non-batch  " + batchResponse);
-			}
-			if ((batchResponse.BatchStatusCode < 200)
-				|| (batchResponse.BatchStatusCode > 299))
-			{
-				throw new CommunicationException("OData communications error - batch call returned batch status code " + batchResponse.BatchStatusCode);
-			}
 
-			foreach (ChangeOperationResponse changeResponse in batchResponse)
-			{
-				Descriptor descriptor = changeResponse.Descriptor;
-				if (changeResponse.Error != null)
+				DataServiceResponse batchResponse = responseTask.Result;
+				// Check for failures that affect all requests in the batch
+				if (!batchResponse.IsBatchResponse)
 				{
-#if SILVERLIGHT
-					Debug.WriteLine("Error saving changes to {0} - status code: {1}, exception: {2}", descriptor, changeResponse.StatusCode, changeResponse.Error);
-#else
-					s_trace.TraceEvent(TraceEventType.Error, -2, "Error saving changes to {0} - status code: {1}, exception: {2}", descriptor, changeResponse.StatusCode, changeResponse.Error);
-#endif
+					throw new CommunicationException("OData communications error - expected batch response, but received non-batch  " + batchResponse);
 				}
-				else
+				if ((batchResponse.BatchStatusCode < 200)
+				    || (batchResponse.BatchStatusCode > 299))
 				{
-					EntityDescriptor entityDescriptor = descriptor as EntityDescriptor;
-					if (entityDescriptor != null)
+					throw new CommunicationException("OData communications error - batch call returned batch status code " + batchResponse.BatchStatusCode);
+				}
+
+				foreach (ChangeOperationResponse changeResponse in batchResponse)
+				{
+					Descriptor descriptor = changeResponse.Descriptor;
+					if (changeResponse.Error != null)
 					{
-						object entity = entityDescriptor.Entity;
 #if SILVERLIGHT
-						Debug.WriteLine("Completed SaveChanges for {0}", entity);
+						Debug.WriteLine("Error saving changes to {0} - status code: {1}, exception: {2}", descriptor, changeResponse.StatusCode, changeResponse.Error);
 #else
-						s_trace.TraceEvent(TraceEventType.Verbose, 0, "Completed SaveChanges for {0}", entity);
+						s_trace.TraceEvent(TraceEventType.Error, -2, "Error saving changes to {0} - status code: {1}, exception: {2}", descriptor, changeResponse.StatusCode, changeResponse.Error);
 #endif
-						EntityTracker entityTracker = _repositoriesByType[entity.GetType()].GetEntityTracker(entity);
-						if (entityTracker != null)
-						{
-							entityTracker.CaptureUnmodifiedState();
-						}
 					}
 					else
 					{
-						LinkDescriptor linkDescriptor = (LinkDescriptor) descriptor;
-						object entity = linkDescriptor.Source;
-						string linkCollectionPropertyName = linkDescriptor.SourceProperty;
-#if SILVERLIGHT
-						Debug.WriteLine("Completed SaveChanges for link {0} -> {1} -> {2}", entity, linkCollectionPropertyName, linkDescriptor.Target);
-#else
-						s_trace.TraceEvent(TraceEventType.Verbose, 0, "Completed SaveChanges for link {0} -> {1} -> {2}", entity, linkCollectionPropertyName, linkDescriptor.Target);
-#endif
-						LinkCollectionTracker linkTracker = _repositoriesByType[entity.GetType()].GetLinkCollectionTracker(entity, linkCollectionPropertyName);
-						if (linkTracker != null)
+						EntityDescriptor entityDescriptor = descriptor as EntityDescriptor;
+						if (entityDescriptor != null)
 						{
-							linkTracker.CaptureUnmodifiedState();
+							object entity = entityDescriptor.Entity;
+#if SILVERLIGHT
+							Debug.WriteLine("Completed SaveChanges for {0}", entity);
+#else
+							s_trace.TraceEvent(TraceEventType.Verbose, 0, "Completed SaveChanges for {0}", entity);
+#endif
+							EntityTracker entityTracker = _repositoriesByType[entity.GetType()].GetEntityTracker(entity);
+							if (entityTracker != null)
+							{
+								entityTracker.CaptureUnmodifiedState();
+							}
+						}
+						else
+						{
+							LinkDescriptor linkDescriptor = (LinkDescriptor) descriptor;
+							object entity = linkDescriptor.Source;
+							string linkCollectionPropertyName = linkDescriptor.SourceProperty;
+#if SILVERLIGHT
+							Debug.WriteLine("Completed SaveChanges for link {0} -> {1} -> {2}", entity, linkCollectionPropertyName, linkDescriptor.Target);
+#else
+							s_trace.TraceEvent(TraceEventType.Verbose, 0, "Completed SaveChanges for link {0} -> {1} -> {2}", entity, linkCollectionPropertyName, linkDescriptor.Target);
+#endif
+							LinkCollectionTracker linkTracker = _repositoriesByType[entity.GetType()].GetLinkCollectionTracker(entity, linkCollectionPropertyName);
+							if (linkTracker != null)
+							{
+								linkTracker.CaptureUnmodifiedState();
+							}
 						}
 					}
 				}
-			}
 
-			// Clear all changes from all edit repositories - b/c just clearing things where there was a response is not always sufficient.
-			foreach (BaseRepository editRepository in _editRepositories.Values)
-			{
-				editRepository.ClearChanges();
+				// Clear all changes from all edit repositories - b/c just clearing things where there was a response is not always sufficient.
+				foreach (BaseRepository editRepository in _editRepositories.Values)
+				{
+					editRepository.ClearChanges();
+				}
+
 			}
 		}
 
 		internal object AddEntityGraph(object entity, BaseRepository repository = null, object parent = null, string parentPropertyName = null)
 		{
-			if (DataServiceContext.GetEntityDescriptor(entity) != null)
+			lock (this)
 			{
-				// Entity is already tracked in the DataServiceContext, don't need to add it again.
-				// This is also the recursive exit, in the case of circular references.
-				return entity;
-			}
-			if (repository == null)
-			{
-				repository = _repositoriesByType[entity.GetType()];
+
+				if (DataServiceContext.GetEntityDescriptor(entity) != null)
+				{
+					// Entity is already tracked in the DataServiceContext, don't need to add it again.
+					// This is also the recursive exit, in the case of circular references.
+					return entity;
+				}
 				if (repository == null)
 				{
-					throw new ArgumentException("Couldn't find an EditRepository for entity type {0}.", entity.GetType().FullName);
-				}
-			}
-			if (! repository.IsEditable)
-			{
-				// Can't add entities that are not editable.
-				throw new InvalidOperationException(string.Format("Entity \"{0}\" is not attached; it must be attached before it can be referenced.", entity));
-			}
-
-			// Add the entity to the local cache, and to the DataServiceContext
-			entity = repository.AddToLocal(entity, EntityState.Added);
-			if (parent == null)
-			{
-				DataServiceContext.AddObject(repository.Name, entity);
-			}
-			else
-			{
-				DataServiceContext.AddRelatedObject(parent, parentPropertyName, entity);
-			}
-
-			// Recursively add connected entities
-			EntityTypeInfo entityTypeInfo;
-			if (!_entityTypeInfos.TryGetValue(entity.GetType(), out entityTypeInfo))
-			{
-				// entity type not in the definition; unexpected 
-				throw new ArgumentException(string.Format("Entity type {0} not in service definition.", entity.GetType()));
-			}
-
-			// Add all referenced entity properties
-			foreach (PropertyInfo property in entityTypeInfo.NavigationProperties)
-			{
-				object referencedEntity = property.GetValue(entity, null);
-				if (referencedEntity != null)
-				{
-					// Recursively add the referencedEntity
-					AddEntityGraph(referencedEntity, _repositoriesByType[referencedEntity.GetType()]);
-				}
-			}
-
-			// Add links for all connected properties
-			foreach (PropertyInfo property in entityTypeInfo.CollectionProperties)
-			{
-				IEnumerable collection = (IEnumerable) property.GetValue(entity, null);
-				if (collection != null)
-				{
-					// Recursively add the collection elements
-					foreach (object linkedEntity in collection)
+					repository = _repositoriesByType[entity.GetType()];
+					if (repository == null)
 					{
-						AddEntityGraph(linkedEntity, _repositoriesByType[linkedEntity.GetType()], entity, property.Name);
+						throw new ArgumentException("Couldn't find an EditRepository for entity type {0}.", entity.GetType().FullName);
 					}
 				}
-			}
+				if (!repository.IsEditable)
+				{
+					// Can't add entities that are not editable.
+					throw new InvalidOperationException(string.Format("Entity \"{0}\" is not attached; it must be attached before it can be referenced.", entity));
+				}
 
-			return entity;
+				// Add the entity to the local cache, and to the DataServiceContext
+				entity = repository.AddToLocal(entity, EntityState.Added);
+				if (parent == null)
+				{
+					DataServiceContext.AddObject(repository.Name, entity);
+				}
+				else
+				{
+					DataServiceContext.AddRelatedObject(parent, parentPropertyName, entity);
+				}
+
+				// Recursively add connected entities
+				EntityTypeInfo entityTypeInfo;
+				if (!_entityTypeInfos.TryGetValue(entity.GetType(), out entityTypeInfo))
+				{
+					// entity type not in the definition; unexpected 
+					throw new ArgumentException(string.Format("Entity type {0} not in service definition.", entity.GetType()));
+				}
+
+				// Add all referenced entity properties
+				foreach (PropertyInfo property in entityTypeInfo.NavigationProperties)
+				{
+					object referencedEntity = property.GetValue(entity, null);
+					if (referencedEntity != null)
+					{
+						// Recursively add the referencedEntity
+						AddEntityGraph(referencedEntity, _repositoriesByType[referencedEntity.GetType()]);
+					}
+				}
+
+				// Add links for all connected properties
+				foreach (PropertyInfo property in entityTypeInfo.CollectionProperties)
+				{
+					IEnumerable collection = (IEnumerable) property.GetValue(entity, null);
+					if (collection != null)
+					{
+						// Recursively add the collection elements
+						foreach (object linkedEntity in collection)
+						{
+							AddEntityGraph(linkedEntity, _repositoriesByType[linkedEntity.GetType()], entity, property.Name);
+						}
+					}
+				}
+
+				return entity;
+			}
 		}
 		
 		internal bool DeleteEntityFromGraph(object entity, BaseRepository repository)
 		{
-			bool deletedFromDataServiceContext = false;
-			try
+			lock (this)
 			{
-				DataServiceContext.DeleteObject(entity);
-				deletedFromDataServiceContext = true;
-			}
-			catch (InvalidOperationException)
-			{ // Not in the context				
-			}
 
-			bool deletedFromLocal = repository.RemoveFromLocal(entity);
-
-			foreach (LinkDescriptor link in DataServiceContext.Links.Where(l => Equals(l.Source, entity) || Equals(l.Target, entity)))
-			{
-				// Determine whether to call SetLink() or DeleteLink().
-				EntityTypeInfo entityTypeInfo = repository.ODataClient.GetEntityTypeInfoFor(link.Source.GetType());
-				PropertyInfo navigationProperty = entityTypeInfo.NavigationProperties.FirstOrDefault(p => p.Name.Equals(link.SourceProperty));
-				if (navigationProperty != null)
-				{ // link.SourceProperty is a navigation property
-					if (ReferenceEquals(link.Target, entity))
-					{
-						// Navigation property points to entity being deleted; set it to null
-						navigationProperty.SetValue(link.Source, null, null);
-						DataServiceContext.SetLink(link.Source, link.SourceProperty, null);
-					}
-					else
-					{	// Navigation property sourced from entity being deleted; stop tracking it
-						DataServiceContext.DetachLink(link.Source, link.SourceProperty, link.Target);
-					}
+				bool deletedFromDataServiceContext = false;
+				try
+				{
+					DataServiceContext.DeleteObject(entity);
+					deletedFromDataServiceContext = true;
 				}
-				else
-				{ // link.SourceProperty is a link collection (one to many) property
-					// For references to entity in a link collection, delete the link
-					if (ReferenceEquals(link.Target, entity))
-					{
-						EntityDescriptor sourceDescriptor = DataServiceContext.GetEntityDescriptor(link.Source);
-						if ((sourceDescriptor == null)
-							|| (sourceDescriptor.State == EntityStates.Deleted))
+				catch (InvalidOperationException)
+				{ // Not in the context				
+				}
+
+				bool deletedFromLocal = repository.RemoveFromLocal(entity);
+
+				foreach (LinkDescriptor link in DataServiceContext.Links.Where(l => Equals(l.Source, entity) || Equals(l.Target, entity)))
+				{
+					// Determine whether to call SetLink() or DeleteLink().
+					EntityTypeInfo entityTypeInfo = repository.ODataClient.GetEntityTypeInfoFor(link.Source.GetType());
+					PropertyInfo navigationProperty = entityTypeInfo.NavigationProperties.FirstOrDefault(p => p.Name.Equals(link.SourceProperty));
+					if (navigationProperty != null)
+					{ // link.SourceProperty is a navigation property
+						if (ReferenceEquals(link.Target, entity))
 						{
-							// Stop tracking the link
-							DataServiceContext.DetachLink(link.Source, link.SourceProperty, link.Target);
+							// Navigation property points to entity being deleted; set it to null
+							navigationProperty.SetValue(link.Source, null, null);
+							DataServiceContext.SetLink(link.Source, link.SourceProperty, null);
 						}
 						else
-						{
-							// Delete the link to entity
-							// REVIEW: Should entity actually be removed from the collection?
-							DataServiceContext.DeleteLink(link.Source, link.SourceProperty, link.Target);
+						{ // Navigation property sourced from entity being deleted; stop tracking it
+							DataServiceContext.DetachLink(link.Source, link.SourceProperty, link.Target);
 						}
 					}
-					else if (ReferenceEquals(null, link.Target))
-					{ // The link is no longer needed
-						DataServiceContext.DetachLink(link.Source, link.SourceProperty, link.Target);
-					}
-				}
-			}
-
-			return deletedFromDataServiceContext && deletedFromLocal;
-		}
-
-		private void OnWritingEntity(object sender, ReadingWritingEntityEventArgs e)
-		{
-			// Find the EntityTypeInfo for the entity type
-			EntityTypeInfo entityTypeInfo;
-			if (_entityTypeInfos.TryGetValue(e.Entity.GetType(), out entityTypeInfo))
-			{
-				// Remove any properties that shouldn't be serialized.
-				if (entityTypeInfo.DontSerializeProperties.Length > 0)
-				{
-					XNamespace mNamespace = e.Data.GetNamespaceOfPrefix("m");
-					XNamespace dNamespace = e.Data.GetNamespaceOfPrefix("d");
-					if ((mNamespace != null) && (dNamespace != null))
-					{
-						XElement nodeProperties = e.Data.Descendants(mNamespace.GetName("properties")).FirstOrDefault();
-						if (nodeProperties != null)
+					else
+					{ // link.SourceProperty is a link collection (one to many) property
+						// For references to entity in a link collection, delete the link
+						if (ReferenceEquals(link.Target, entity))
 						{
-							foreach (var propertyName in entityTypeInfo.DontSerializeProperties)
+							EntityDescriptor sourceDescriptor = DataServiceContext.GetEntityDescriptor(link.Source);
+							if ((sourceDescriptor == null)
+							    || (sourceDescriptor.State == EntityStates.Deleted))
 							{
-								nodeProperties.Descendants(dNamespace.GetName(propertyName)).Remove();	
-							}							
+								// Stop tracking the link
+								DataServiceContext.DetachLink(link.Source, link.SourceProperty, link.Target);
+							}
+							else
+							{
+								// Delete the link to entity
+								// REVIEW: Should entity actually be removed from the collection?
+								DataServiceContext.DeleteLink(link.Source, link.SourceProperty, link.Target);
+							}
+						}
+						else if (ReferenceEquals(null, link.Target))
+						{ // The link is no longer needed
+							DataServiceContext.DetachLink(link.Source, link.SourceProperty, link.Target);
 						}
 					}
 				}
+
+				return deletedFromDataServiceContext && deletedFromLocal;
+
 			}
 		}
 
-		private void OnReadingEntity(object sender, ReadingWritingEntityEventArgs e)
-		{
-			object entity = e.Entity;
-		}
+		// REVIEW: Never called, since we're using JSON.  These are only called when using Atom.
+		//private void OnWritingEntity(object sender, ReadingWritingEntityEventArgs e)
+		//{
+		//	// Find the EntityTypeInfo for the entity type
+		//	EntityTypeInfo entityTypeInfo;
+		//	if (_entityTypeInfos.TryGetValue(e.Entity.GetType(), out entityTypeInfo))
+		//	{
+		//		// Remove any properties that shouldn't be serialized.
+		//		if (entityTypeInfo.DontSerializeProperties.Length > 0)
+		//		{
+		//			XNamespace mNamespace = e.Data.GetNamespaceOfPrefix("m");
+		//			XNamespace dNamespace = e.Data.GetNamespaceOfPrefix("d");
+		//			if ((mNamespace != null) && (dNamespace != null))
+		//			{
+		//				XElement nodeProperties = e.Data.Descendants(mNamespace.GetName("properties")).FirstOrDefault();
+		//				if (nodeProperties != null)
+		//				{
+		//					foreach (var propertyName in entityTypeInfo.DontSerializeProperties)
+		//					{
+		//						nodeProperties.Descendants(dNamespace.GetName(propertyName)).Remove();	
+		//					}							
+		//				}
+		//			}
+		//		}
+		//	}
+		//}
+
+		//private void OnReadingEntity(object sender, ReadingWritingEntityEventArgs e)
+		//{
+		//	object entity = e.Entity;
+		//}
 
 		private EntityState EntityStateFromDataServiceState(EntityStates dataServiceState)
 		{

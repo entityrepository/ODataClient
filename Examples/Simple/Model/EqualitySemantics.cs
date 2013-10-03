@@ -4,9 +4,6 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using PD.Base.PortableUtil.Enum;
 
 namespace Simple.Model

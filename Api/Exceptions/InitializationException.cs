@@ -4,9 +4,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-
 using System;
-using System.Runtime.Serialization;
 
 namespace PD.Base.EntityRepository.Api.Exceptions
 {

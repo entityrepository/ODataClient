@@ -41,7 +41,7 @@ namespace Scrum.Web.IntegrationTests
 		{
 			const short statusId = 2;
 			Assert.Same(DbEnumManager.LookupById<short, Status>(statusId), _client.Status.Local.Single(status => status.ID == statusId));
-			
+
 			Assert.Equal(Priority.Unknown, _client.Priority.Local.Single(priority => priority.ID == 0));
 		}
 
@@ -52,11 +52,11 @@ namespace Scrum.Web.IntegrationTests
 			IQueryable<WorkItem> query = _client.WorkItems.Select(workItem => workItem);
 			var queryCompletion = _client.InvokeAsync(query);
 			var completion = queryCompletion.ContinueWith(
-			                                       task =>
-			                                       {
-				                                       Assert.False(task.IsFaulted);
-				                                       Console.WriteLine(query.First());
-			                                       });
+			                                              task =>
+			                                              {
+				                                              Assert.False(task.IsFaulted);
+				                                              Console.WriteLine(query.First());
+			                                              });
 			completion.Wait(ScrumClient.TestTimeout);
 		}
 
@@ -86,39 +86,40 @@ namespace Scrum.Web.IntegrationTests
 				       .Include(wi => wi.AssignedTo)
 				       .Include(wi => wi.Status)
 				       .Include(wi => wi.Priority);
-			WorkItem workItem = null;
+			WorkItem[] workItems = null;
 			var queryCompletion = _client.InvokeAsync(query);
 			var completion = queryCompletion.ContinueWith(
-			                                       task =>
-			                                       {
-				                                       Assert.True(task.IsCompleted);
-				                                       workItem = query.First();
-			                                       });
+			                                              task =>
+			                                              {
+				                                              Assert.True(task.IsCompleted);
+															  workItems = query.ToArray();
+			                                              });
 			completion.Wait(ScrumClient.TestTimeout);
 
-			Assert.NotNull(workItem);
-			Assert.NotEmpty(workItem.Areas);
-			Assert.NotEmpty(workItem.TimeLog);
-			Assert.NotEmpty(workItem.Subscribers);
-			Assert.NotEmpty(workItem.AssignedTo);
+			Assert.NotNull(workItems);
+			Assert.NotEmpty(workItems);
+			Assert.True(workItems.Any(wi => wi.Areas.Any()));
+			Assert.True(workItems.Any(wi => wi.TimeLog.Any()));
+			Assert.True(workItems.Any(wi => wi.Subscribers.Any()));
+			Assert.True(workItems.Any(wi => wi.AssignedTo.Any()));
 		}
 
 		[Fact]
 		public void TestAsynchronousNestedInclude()
 		{
 			var query = _client.WorkItems.Include(wi => wi.Areas.Include(a => a.Owners))
-							   .Include(wi => wi.TimeLog.Include(tl => tl.Worker))
+			                   .Include(wi => wi.TimeLog.Include(tl => tl.Worker))
 			                   .Include(wi => wi.Project.Include(p => p.Areas.Include(a => a.Owners)).Include(p => p.Versions))
 			                   .Include(wi => wi.Subscribers)
 			                   .Include(wi => wi.AssignedTo);
 			WorkItem workItem = null;
 			var queryCompletion = _client.InvokeAsync(query);
 			var completion = queryCompletion.ContinueWith(
-												   task =>
-												   {
-													   Assert.True(task.IsCompleted);
-													   workItem = query.First();
-												   });
+			                                              task =>
+			                                              {
+				                                              Assert.True(task.IsCompleted);
+				                                              workItem = query.First();
+			                                              });
 			Assert.True(completion.Wait(ScrumClient.TestTimeout));
 
 			Assert.NotNull(workItem);
@@ -153,7 +154,7 @@ namespace Scrum.Web.IntegrationTests
 			TimeSpan? previousTimeEstimate = workItem.TimeEstimate;
 			workItem.TimeEstimate = previousTimeEstimate;
 			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
-	
+
 			// Change a property, should result in a tracked change
 			workItem.TimeEstimate = new TimeSpan(0, 90, 0);
 			Assert.Equal(EntityState.Modified, _client.WorkItems.GetEntityState(workItem));
@@ -191,7 +192,7 @@ namespace Scrum.Web.IntegrationTests
 			var workItemQuery = _client.WorkItems.Include(wi => wi.Project).Take(1);
 			// Query for all Projects
 			var allProjectsQuery = _client.Projects.All;
-	
+
 			_client.InvokeAsync(workItemQuery, allProjectsQuery).Wait(ScrumClient.TestTimeout);
 			WorkItem workItem = workItemQuery.First();
 			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
@@ -285,13 +286,13 @@ namespace Scrum.Web.IntegrationTests
 				                    AssignedTo = { joeUser },
 				                    Title = "Logger isn't logging",
 				                    Description = "I think this is because it's not configured in app.config.",
-									AffectsVersions = { affectsVersions.First() }
+				                    AffectsVersions = { affectsVersions.First() }
 			                    };
 			// Create an associated message
 			WorkItemMessage message = new WorkItemMessage(workItem, joeUser)
-									  {
-										  Message = "Yep, I verified that it's not configured correctly."
-									  };
+			                          {
+				                          Message = "Yep, I verified that it's not configured correctly."
+			                          };
 			workItem.Messages.Add(message);
 
 			// This adds the whole tree of related items and links
@@ -324,16 +325,17 @@ namespace Scrum.Web.IntegrationTests
 
 			// Verify adding child objects works
 			WorkItemMessage message2 = new WorkItemMessage(workItem, gailUser)
-			{
-				Created = DateTime.Now.AddHours(1),
-				Message = "This message was written in the future."
-			};
+			                           {
+				                           Created = DateTime.Now.AddHours(1),
+				                           Message = "This message was written in the future."
+			                           };
 			workItem.Messages.Add(message2);
 			Assert.Equal(EntityState.Modified, _client.WorkItems.GetEntityState(workItem));
 			// Since WorkItem.Messages implement INotifyCollectionchanged, message2 should be added to the repository as soon as it's added to workItem.Messages,
 			// since workItem is being tracked:
 			Assert.Equal(EntityState.Added, _client.WorkItemMessages.GetEntityState(message2));
 			Assert.True(_client.SaveChanges().Wait(ScrumClient.TestTimeout));
+			Assert.True(message2.ID >= 1);
 			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
 			Assert.Equal(EntityState.Unmodified, _client.WorkItemMessages.GetEntityState(message2));
 
@@ -342,13 +344,13 @@ namespace Scrum.Web.IntegrationTests
 			Assert.True(_client.Clear().Wait(ScrumClient.TestTimeout));
 			Assert.DoesNotContain(message, _client.WorkItemMessages.Local);
 			Assert.Equal(EntityState.Detached, _client.WorkItems.GetEntityState(workItem));
-			
+
 			// Query for this WorkItem and connected objects, check that everything is there
 			var query = _client.WorkItems.Where(wi => wi.ID == workItem.ID)
-										   .Include(wi => wi.Areas)
-										   .Include(wi => wi.Subscribers)
-										   .Include(wi => wi.Project.Include(p => p.Areas).Include(p => p.Versions))
-										   .Include(wi => wi.Messages.Include(m => m.Author).Include(m => m.WorkItem));
+			                   .Include(wi => wi.Areas)
+			                   .Include(wi => wi.Subscribers)
+			                   .Include(wi => wi.Project.Include(p => p.Areas).Include(p => p.Versions))
+			                   .Include(wi => wi.Messages.Include(m => m.Author).Include(m => m.WorkItem));
 			Assert.True(_client.InvokeAsync(query).Wait(ScrumClient.TestTimeout));
 			WorkItem workItemQueried = query.Single();
 			Assert.Equal(2, workItemQueried.Messages.Count);
@@ -394,7 +396,7 @@ namespace Scrum.Web.IntegrationTests
 			_client.Clear().Wait(ScrumClient.TestTimeout);
 
 			// Fetch a work item, and its project
-			var workItemQuery = _client.WorkItems.Include(wi => wi.Project).Include(wi => wi.Areas).Take(1);
+			var workItemQuery = _client.WorkItems.Include(wi => wi.Project).Include(wi => wi.Areas).Include(wi => wi.Creator).Take(1);
 			_client.InvokeAsync(workItemQuery).Wait(ScrumClient.TestTimeout);
 			WorkItem workItem = workItemQuery.First();
 			Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));

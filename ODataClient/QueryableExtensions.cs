@@ -6,7 +6,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data.Services.Client;
 using System.Diagnostics.Contracts;
 using System.Linq;
@@ -58,7 +57,7 @@ namespace PD.Base.EntityRepository.ODataClient
 		/// <param name="navigationProperty">An expression indicating the property to include</param>
 		/// <returns></returns>
 		public static IQueryable<TEntity> Include<TEntity, TProperty>(this IQueryable<TEntity> source, Expression<Func<TEntity, TProperty>> navigationProperty)
-				where TEntity : class
+			where TEntity : class
 		{
 			Contract.Requires<ArgumentNullException>(navigationProperty != null);
 
@@ -88,7 +87,7 @@ namespace PD.Base.EntityRepository.ODataClient
 		/// <param name="navigationProperty"></param>
 		/// <returns></returns>
 		public static IEnumerable<TEntity> Include<TEntity, TProperty>(this IEnumerable<TEntity> source, Expression<Func<TEntity, TProperty>> navigationProperty)
-				where TEntity : class
+			where TEntity : class
 		{
 			throw new NotImplementedException("Should only be used within a query expression; should not be called.");
 		}
@@ -104,7 +103,7 @@ namespace PD.Base.EntityRepository.ODataClient
 		/// <returns></returns>
 		// TODO: Consider moving BaseEntity to Base.EntityRepository.Api, then requiring TEntity : BaseEntity - to make this more selective
 		public static TEntity Include<TEntity, TProperty>(this TEntity source, Expression<Func<TEntity, TProperty>> navigationProperty)
-				where TEntity : class, new()
+			where TEntity : class, new()
 		{
 			throw new NotImplementedException("Should only be used within a query expression; should not be called.");
 		}
@@ -123,7 +122,7 @@ namespace PD.Base.EntityRepository.ODataClient
 				navigationProperty = (LambdaExpression) navigationProperty.Reduce();
 			}
 			List<StringBuilder> expandPaths = new List<StringBuilder>();
-			
+
 			// Iterate over linked calls to .Include() and/or property selectors
 			// Recurse for nested includes - ie recurse for the navigationProperty argument of Include(, LambdaExpression)
 			MemberInfo property = null;
@@ -137,7 +136,7 @@ namespace PD.Base.EntityRepository.ODataClient
 						MethodCallExpression callExpression = (MethodCallExpression) nextExpression;
 						MethodInfo method = callExpression.Method;
 						if ((method.Name != "Include")
-							|| (method.DeclaringType != typeof(QueryableExtensions)))
+						    || (method.DeclaringType != typeof(QueryableExtensions)))
 						{
 							throw new InvalidOperationException("Invalid method call within .Include() : " + callExpression);
 						}
@@ -163,10 +162,11 @@ namespace PD.Base.EntityRepository.ODataClient
 						break;
 
 					default:
-						throw new InvalidOperationException(string.Format("ExpressionType {0} not supported in .Include() expressions.  Expression '{1}' could not be processed within full expression '{2}'.",
-																		  nextExpression.NodeType,
-																		  nextExpression,
-																		  navigationProperty));
+						throw new InvalidOperationException(
+							string.Format("ExpressionType {0} not supported in .Include() expressions.  Expression '{1}' could not be processed within full expression '{2}'.",
+							              nextExpression.NodeType,
+							              nextExpression,
+							              navigationProperty));
 				}
 			}
 
@@ -175,7 +175,7 @@ namespace PD.Base.EntityRepository.ODataClient
 				throw new ArgumentException("One property selector must be present in a .Include() expression: " + navigationProperty);
 			}
 			if (expandPaths.Any())
-			{	
+			{
 				// Prefix this property name before the nested includes
 				foreach (var sb in expandPaths)
 				{
@@ -188,7 +188,7 @@ namespace PD.Base.EntityRepository.ODataClient
 				}
 			}
 			else
-			{	// No nested includes
+			{ // No nested includes
 				expandPaths.Add(new StringBuilder(property.Name));
 			}
 			return expandPaths;

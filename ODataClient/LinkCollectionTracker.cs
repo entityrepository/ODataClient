@@ -4,7 +4,6 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -50,7 +49,9 @@ namespace PD.Base.EntityRepository.ODataClient
 		}
 
 		internal string SourcePropertyName
-		{ get { return _sourcePropertyName; } }
+		{
+			get { return _sourcePropertyName; }
+		}
 
 		private void OnCollectionChanged(object sender, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs)
 		{

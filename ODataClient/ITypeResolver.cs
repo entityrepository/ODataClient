@@ -4,13 +4,13 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-
 using System;
 
 namespace PD.Base.EntityRepository.ODataClient
 {
 	internal interface ITypeResolver
 	{
+
 		/// <summary>
 		/// Converts a metadata type name to a real type.  In OData, the typeName often does
 		/// not contain the real namespace for the type.

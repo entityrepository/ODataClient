@@ -4,8 +4,6 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-
-using System;
 using System.Data.Entity;
 using Simple.Model;
 
@@ -24,11 +22,11 @@ namespace Simple.Web
 		{
 			for (int i = 0; i < 2; i++)
 			{
-				db.EqualityTestRecords.Add(new EqualityTestRecord()
-				{
-					EqualitySemantic = equalitySemantic,
-					Payload = equalitySemantic.ToString()
-				});
+				db.EqualityTestRecords.Add(new EqualityTestRecord
+				                           {
+					                           EqualitySemantic = equalitySemantic,
+					                           Payload = equalitySemantic.ToString()
+				                           });
 			}
 		}
 

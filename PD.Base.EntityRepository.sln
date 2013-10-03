@@ -21,7 +21,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scrum.Dal", "Examples\Scrum
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scrum.Dal.IntegrationTests", "Examples\Scrum\Dal.IntegrationTests\Scrum.Dal.IntegrationTests.csproj", "{96021276-57EE-40DB-B304-FC064D09C9F3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scrum.Web", "Examples\Scrum\Web\Scrum.Web.csproj", "{7C1F9F0C-1736-4E45-8519-7CDE8FD8CF1B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scrum.WcfDataService", "Examples\Scrum\WcfDataService\Scrum.WcfDataService.csproj", "{7C1F9F0C-1736-4E45-8519-7CDE8FD8CF1B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Base.EntityRepository.ODataClient", "ODataClient\Base.EntityRepository.ODataClient.csproj", "{81406CCC-0242-4009-8BE5-96E7A80F6922}"
 EndProject
@@ -36,6 +36,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Simple.Web", "Examples\Simple\Web\Simple.Web.csproj", "{0D2C23B0-E76F-4E21-818C-5ED97580FB8F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Simple.IntegrationTests", "Examples\Simple\IntegrationTests\Simple.IntegrationTests.csproj", "{918CDC3D-CFDB-4ECC-A621-1D96CFEEAFE5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scrum.WebApi", "Examples\Scrum\WebApi\Scrum.WebApi.csproj", "{14210187-9E28-4088-A8B8-10263313B901}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -99,6 +101,10 @@ Global
 		{918CDC3D-CFDB-4ECC-A621-1D96CFEEAFE5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{918CDC3D-CFDB-4ECC-A621-1D96CFEEAFE5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{918CDC3D-CFDB-4ECC-A621-1D96CFEEAFE5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{14210187-9E28-4088-A8B8-10263313B901}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{14210187-9E28-4088-A8B8-10263313B901}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{14210187-9E28-4088-A8B8-10263313B901}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{14210187-9E28-4088-A8B8-10263313B901}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -117,6 +123,7 @@ Global
 		{7C1F9F0C-1736-4E45-8519-7CDE8FD8CF1B} = {0D446CAD-AE2E-44F2-A8CE-DFE3E0E3874A}
 		{A677C165-825A-42C6-A145-D884C8D08A75} = {0D446CAD-AE2E-44F2-A8CE-DFE3E0E3874A}
 		{03458384-6E78-42F5-B208-7329C3B7E67D} = {0D446CAD-AE2E-44F2-A8CE-DFE3E0E3874A}
+		{14210187-9E28-4088-A8B8-10263313B901} = {0D446CAD-AE2E-44F2-A8CE-DFE3E0E3874A}
 		{0946CF36-3C2A-495D-AA6B-5C8C5AF5521E} = {F5B493A5-7610-4537-851F-768CBD2C9287}
 		{0D2C23B0-E76F-4E21-818C-5ED97580FB8F} = {F5B493A5-7610-4537-851F-768CBD2C9287}
 		{918CDC3D-CFDB-4ECC-A621-1D96CFEEAFE5} = {F5B493A5-7610-4537-851F-768CBD2C9287}

@@ -4,9 +4,13 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data.Entity;
+using System.Data.Entity.Infrastructure;
 using System.Data.Entity.ModelConfiguration.Conventions;
+using System.Data.Entity.Validation;
+using System.Diagnostics;
 using Scrum.Model;
 
 namespace Scrum.Dal
@@ -49,10 +53,18 @@ namespace Scrum.Dal
 			}
 		}
 
-		protected override System.Data.Entity.Validation.DbEntityValidationResult ValidateEntity(System.Data.Entity.Infrastructure.DbEntityEntry entityEntry, System.Collections.Generic.IDictionary<object, object> items)
+		protected override DbEntityValidationResult ValidateEntity(DbEntityEntry entityEntry, IDictionary<object, object> items)
 		{
 			// TODO: We could do our custom validation here, and turn validation back on...
-			return base.ValidateEntity(entityEntry, items);
+			DbEntityValidationResult validationResult = base.ValidateEntity(entityEntry, items);
+			if (!validationResult.IsValid)
+			{
+				foreach (var validationError in validationResult.ValidationErrors)
+				{
+					Debug.WriteLine("  Validation error on {0} : {1}", validationError.PropertyName, validationError.ErrorMessage);
+				}
+			}
+			return validationResult;
 		}
 
 		public override int SaveChanges()
@@ -61,14 +73,16 @@ namespace Scrum.Dal
 			return base.SaveChanges();
 		}
 
+		public DbSet<Client> Clients { get; set; }
+		public DbSet<Project> Projects { get; set; }
 		public DbSet<ProjectArea> ProjectAreas { get; set; }
 		public DbSet<ProjectVersion> ProjectVersions { get; set; }
-		public DbSet<Project> Projects { get; set; }
 		public DbSet<Sprint> Sprints { get; set; }
 		public DbSet<User> Users { get; set; }
-		public DbSet<WorkItemMessage> WorkItemMessages { get; set; }
-		public DbSet<WorkItemTimeLog> WorkItemTimeLog { get; set; }
 		public DbSet<WorkItem> WorkItems { get; set; }
+		public DbSet<WorkItemMessage> WorkItemMessages { get; set; }
+		public DbSet<WorkItemPropertyChange> WorkItemPropertyChanges { get; set; }
+		public DbSet<WorkItemTimeLog> WorkItemTimeLog { get; set; }
 
 		public DbSet<Priority> Priority { get; set; }
 		public DbSet<Status> Status { get; set; }
@@ -97,7 +111,8 @@ namespace Scrum.Dal
 
 			modelBuilder.Entity<WorkItemMessage>().HasRequired(m => m.Author).WithMany().WillCascadeOnDelete(false);
 
-			modelBuilder.Entity<WorkItemPropertyChange>().HasRequired(m => m.Author).WithMany().WillCascadeOnDelete(false);
+			modelBuilder.Entity<WorkItemPropertyChange>().HasRequired(c => c.Author).WithMany().WillCascadeOnDelete(false);
+			modelBuilder.Entity<WorkItemPropertyChange>().HasRequired(c => c.WorkItem).WithMany();
 
 			modelBuilder.Entity<WorkItemTimeLog>().HasRequired(l => l.Worker).WithMany().WillCascadeOnDelete(false);
 

@@ -4,15 +4,13 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-using System.ComponentModel.DataAnnotations;
-using System.Diagnostics.Contracts;
-using Microsoft.Data.Edm;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
-using PD.Base.PortableUtil.Model;
+using Microsoft.Data.Edm;
 
 namespace PD.Base.EntityRepository.ODataClient
 {
@@ -155,13 +153,18 @@ namespace PD.Base.EntityRepository.ODataClient
 
 		internal enum PropertyCategory : byte
 		{
+
 			/// <summary> Primitive values, doesn't reference another type. </summary>
 			Structural,
+
 			/// <summary> 1-to-1 property </summary>
 			Navigation,
+
 			/// <summary> 1-to-many property </summary>
 			Collection
+
 		}
+
 
 		internal struct PropertyValidationInfo
 		{
@@ -193,5 +196,6 @@ namespace PD.Base.EntityRepository.ODataClient
 			}
 
 		}
+
 	}
 }

@@ -1,15 +1,14 @@
 ﻿// -----------------------------------------------------------------------
-// <copyright file="ReadOnlyRepository.cs" company="PrecisionDemand">
+// <copyright file="ReadonlyRepository.cs" company="PrecisionDemand">
 // Copyright (c) 2013 PrecisionDemand.  All rights reserved.
 // </copyright>
 // -----------------------------------------------------------------------
 
-
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using PD.Base.EntityRepository.Api;
 using PD.Base.PortableUtil.Model;
-using System.Collections.Generic;
 
 namespace PD.Base.EntityRepository.ODataClient
 {
@@ -23,7 +22,7 @@ namespace PD.Base.EntityRepository.ODataClient
 	{
 
 		private readonly Dictionary<TEntity, TEntity> _localCache;
- 
+
 		internal ReadOnlyRepository(ODataClient odataClient, EntitySetInfo entitySetInfo)
 			: base(odataClient, entitySetInfo)
 		{
@@ -80,6 +79,7 @@ namespace PD.Base.EntityRepository.ODataClient
 		}
 
 		#endregion
+
 		#region BaseRepository
 
 		/// <summary>
@@ -97,12 +97,12 @@ namespace PD.Base.EntityRepository.ODataClient
 
 #if DEBUG
 				// In Debug builds, verify that there are no TEntity objects remaining
-				Debug.Assert(! DataServiceContext.Entities.Any(ed => ed.Entity is TEntity), "There should be no remaining " + typeof(TEntity).FullName + " objects in DataServiceContext after ClearLocal() completes.");
+				Debug.Assert(! DataServiceContext.Entities.Any(ed => ed.Entity is TEntity),
+				             "There should be no remaining " + typeof(TEntity).FullName + " objects in DataServiceContext after ClearLocal() completes.");
 #endif
 			}
 		}
 
 		#endregion
-
 	}
 }

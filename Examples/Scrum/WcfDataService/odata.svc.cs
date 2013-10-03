@@ -4,6 +4,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
+using System.Data.Entity;
 using System.Data.Services;
 using System.Data.Services.Common;
 using System.ServiceModel;
@@ -29,6 +30,9 @@ namespace Scrum.Web
 #endif
 			config.DataServiceBehavior.IncludeAssociationLinksInResponse = true;
 			config.DataServiceBehavior.MaxProtocolVersion = DataServiceProtocolVersion.V3;
+
+			// Skip database initialization so we can use the EF 6.0 version of the database with EF 5.0
+			Database.SetInitializer<ScrumDb>(null);
 		}
 
 		protected override ScrumDb CreateDataSource()
@@ -49,5 +53,6 @@ namespace Scrum.Web
 		{
 			base.HandleException(args);
 		}
+
 	}
 }

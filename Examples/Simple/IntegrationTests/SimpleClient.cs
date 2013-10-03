@@ -4,7 +4,6 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-
 using System;
 using PD.Base.EntityRepository.Api;
 using PD.Base.EntityRepository.ODataClient;

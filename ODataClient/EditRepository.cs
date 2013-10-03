@@ -4,12 +4,12 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-using System.Diagnostics;
-using PD.Base.EntityRepository.Api;
 using System;
 using System.Collections.Generic;
 using System.Data.Services.Client;
+using System.Diagnostics;
 using System.Linq;
+using PD.Base.EntityRepository.Api;
 
 namespace PD.Base.EntityRepository.ODataClient
 {
@@ -82,6 +82,7 @@ namespace PD.Base.EntityRepository.ODataClient
 		}
 
 		#endregion
+
 		#region BaseRepository
 
 		internal override EntityTracker GetEntityTracker(object entity)
@@ -148,12 +149,14 @@ namespace PD.Base.EntityRepository.ODataClient
 
 #if DEBUG
 				// In Debug builds, verify that there are no TEntity objects remaining
-				Debug.Assert(! DataServiceContext.Entities.Any(ed => ed.Entity is TEntity), "There should be no remaining " + typeof(TEntity).FullName + " objects in DataServiceContext after ClearLocal() completes.");
+				Debug.Assert(! DataServiceContext.Entities.Any(ed => ed.Entity is TEntity),
+				             "There should be no remaining " + typeof(TEntity).FullName + " objects in DataServiceContext after ClearLocal() completes.");
 #endif
 			}
 		}
 
 		#endregion
+
 		#region IEditRepository<TEntity> Members
 
 		public TEntity Add(TEntity entity)
@@ -246,7 +249,7 @@ namespace PD.Base.EntityRepository.ODataClient
 					if (_entityTrackers.TryGetValue(entity, out entityTracker))
 					{
 						return entityTracker.AreStructuralPropertiesUnmodified()
-							   && entityTracker.AreNavigationPropertiesUnmodified()
+						       && entityTracker.AreNavigationPropertiesUnmodified()
 						       && entityTracker.AreLinkCollectionsUnmodified()
 							       ? EntityState.Unmodified
 							       : EntityState.Modified;
@@ -265,6 +268,5 @@ namespace PD.Base.EntityRepository.ODataClient
 		}
 
 		#endregion
-
 	}
 }

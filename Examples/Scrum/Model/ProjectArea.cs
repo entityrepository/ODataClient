@@ -6,6 +6,7 @@
 
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using PD.Base.PortableUtil.Model;
 using Scrum.Model.Base;
 
 namespace Scrum.Model
@@ -16,6 +17,7 @@ namespace Scrum.Model
 	{
 		#region Fields
 
+		private EntityRef<Project, int> _project;
 		private ICollection<User> _owners;
 
 		#endregion
@@ -27,14 +29,22 @@ namespace Scrum.Model
 		[StringLength(100, MinimumLength = 2)]
 		public string Name { get; set; }
 
-		public virtual ICollection<User> Owners
+		public Project Project
+		{
+			get { return _project.Entity; }
+			set { _project.Entity = value; }
+		}
+		public int ProjectId
+		{
+			get { return _project.ForeignKey; }
+			set { _project.ForeignKey = value; }
+		}
+
+		public ICollection<User> Owners
 		{
 			get { return EnsureCollectionProperty(ref _owners); }
 			set { SetCollectionProperty(ref _owners, value); }
 		}
-
-		[Required]
-		public virtual Project Project { get; protected set; }
 
 	}
 }

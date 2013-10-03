@@ -8,10 +8,8 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
 using PD.Base.PortableUtil.Model;
 
 namespace Scrum.Model.Base
@@ -22,7 +20,7 @@ namespace Scrum.Model.Base
 	/// </summary>
 	/// <typeparam name="TId">The ID type - must be a valid ID type in entity framework and data services - signed numeric type, string, etc.</typeparam>
 	/// <typeparam name="TEntity">The entity type, which is derived from <c>BaseEntity</c></typeparam>
-	public abstract class BaseEntity<TId, TEntity> : Freezable, INotifyPropertyChanged, IEquatable<TEntity>
+	public abstract class BaseEntity<TId, TEntity> : INotifyPropertyChanged, IEquatable<TEntity>
 		where TEntity : BaseEntity<TId, TEntity>
 	{
 		#region INotifyPropertyChanged Members
@@ -61,7 +59,6 @@ namespace Scrum.Model.Base
 					{
 						throw new InvalidOperationException("Entity ID cannot be set more than once.");
 					}
-					this.ThrowIfFrozen(e => e.ID);
 
 					_id = value;
 				}
@@ -93,7 +90,7 @@ namespace Scrum.Model.Base
 				return false;
 			}
 
-			if (!HasId)// && ! other.HasId)
+			if (!HasId) // && ! other.HasId)
 			{
 				// Not the same instance, but neither entity has been stored in the DB yet.
 				return false;

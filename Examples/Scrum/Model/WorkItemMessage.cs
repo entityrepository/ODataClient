@@ -6,6 +6,7 @@
 
 using System;
 using System.ComponentModel.DataAnnotations;
+using PD.Base.PortableUtil.Model;
 using Scrum.Model.Base;
 
 namespace Scrum.Model
@@ -15,8 +16,8 @@ namespace Scrum.Model
 	public class WorkItemMessage : BaseEntity<long, WorkItemMessage>
 	{
 
-		private EntityRef<WorkItem, int> _workItemEntityRef = new EntityRef<WorkItem, int>(workItem => workItem.ID);
-		private EntityRef<User, int> _authorEntityRef = new EntityRef<User, int>(user => user.ID);
+		private EntityRef<WorkItem, int> _workItem = new EntityRef<WorkItem, int>(workItem => workItem.ID);
+		private EntityRef<User, int> _author = new EntityRef<User, int>(user => user.ID);
 
 		public WorkItemMessage(WorkItem workItem, User author)
 		{
@@ -31,29 +32,27 @@ namespace Scrum.Model
 		public WorkItemMessage()
 		{}
 
-		[Required]
 		public WorkItem WorkItem
 		{
-			get { return _workItemEntityRef.Entity; }
-			set { _workItemEntityRef.Entity = value; }
+			get { return _workItem.Entity; }
+			set { _workItem.Entity = value; }
 		}
 		public int WorkItemId
 		{
-			get { return _workItemEntityRef.ForeignKey; }
-			set { _workItemEntityRef.ForeignKey = value; }
+			get { return _workItem.ForeignKey; }
+			set { _workItem.ForeignKey = value; }
 		}
 
-		[Required]
 		public User Author
 		{
-			get { return _authorEntityRef.Entity; }
-			set { _authorEntityRef.Entity = value; }
+			get { return _author.Entity; }
+			set { _author.Entity = value; }
 		}
-		//public int AuthorId
-		//{
-		//	get { return _authorEntityRef.ForeignKey; }
-		//	set { _authorEntityRef.ForeignKey = value; }
-		//}
+		public int AuthorId
+		{
+			get { return _author.ForeignKey; }
+			set { _author.ForeignKey = value; }
+		}
 
 		[Required]
 		public string Message { get; set; }

@@ -1,18 +1,16 @@
 ﻿// -----------------------------------------------------------------------
-// <copyright file="BaseRepository.cs" company="PrecisionDemand">
+// <copyright file="BaseRepositoryOfTEntity.cs" company="PrecisionDemand">
 // Copyright (c) 2013 PrecisionDemand.  All rights reserved.
 // </copyright>
 // -----------------------------------------------------------------------
 
-
-using PD.Base.EntityRepository.Api;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Data.Services.Client;
 using System.Linq;
 using System.Linq.Expressions;
+using PD.Base.EntityRepository.Api;
 
 namespace PD.Base.EntityRepository.ODataClient
 {
@@ -22,6 +20,7 @@ namespace PD.Base.EntityRepository.ODataClient
 	internal abstract class BaseRepository<TEntity> : BaseRepository, IRepository<TEntity>
 		where TEntity : class
 	{
+
 		// The query that returns all items in the repository
 		private readonly ODataClientQuery<TEntity> _baseQuery;
 

@@ -4,10 +4,9 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-
-using PD.Base.EntityRepository.Api;
 using System;
 using System.Data.Services.Client;
+using PD.Base.EntityRepository.Api;
 
 namespace PD.Base.EntityRepository.ODataClient
 {
@@ -16,6 +15,7 @@ namespace PD.Base.EntityRepository.ODataClient
 	/// </summary>
 	internal abstract class ODataClientRequest : IRequest
 	{
+
 		protected ODataClientRequest()
 		{}
 
@@ -37,10 +37,12 @@ namespace PD.Base.EntityRepository.ODataClient
 		{
 			get { return (_requestState == RequestState.Completed) || (_requestState == RequestState.CompletedWithError); }
 		}
+
 		public bool IsFaulted
 		{
 			get { return _requestState == RequestState.CompletedWithError; }
 		}
+
 		public bool IsCompletedSuccessfully
 		{
 			get { return _requestState == RequestState.Completed; }
@@ -90,12 +92,16 @@ namespace PD.Base.EntityRepository.ODataClient
 			}
 		}
 
+
 		private enum RequestState : byte
 		{
+
 			NotSent,
 			Sending,
 			Completed,
 			CompletedWithError
+
 		}
+
 	}
 }

@@ -4,10 +4,10 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
+using System;
 using PD.Base.EntityRepository.Api;
 using PD.Base.EntityRepository.ODataClient;
 using Scrum.Model;
-using System;
 
 namespace Scrum.Silverlight
 {
@@ -18,6 +18,7 @@ namespace Scrum.Silverlight
 	/// </summary>
 	public class ScrumClient : DataContext
 	{
+
 		// Relative URL is resolved against the hosting silverlight application.
 		public const string DefaultUrl = "odata.svc/";
 
@@ -41,6 +42,7 @@ namespace Scrum.Silverlight
 			ProjectAreas = EditRepositoryFor(() => ProjectAreas);
 			WorkItems = EditRepositoryFor(() => WorkItems);
 		}
+
 	}
 
 }

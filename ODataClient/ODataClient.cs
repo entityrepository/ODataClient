@@ -20,7 +20,6 @@ using System.ServiceModel;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
-using System.Xml.Linq;
 using Microsoft.Data.Edm;
 using Microsoft.Data.Edm.Csdl;
 using Microsoft.Data.Edm.Validation;
@@ -150,7 +149,7 @@ namespace PD.Base.EntityRepository.ODataClient
 			Contract.Requires<ArgumentNullException>(serviceRoot != null);
 
 #if SILVERLIGHT
-			// For silverlight applications, build a full Uri based on the silverlight app URL
+	// For silverlight applications, build a full Uri based on the silverlight app URL
 			SilverlightUtil.ConvertAppRelativeUriToAbsoluteUri(ref serviceRoot);
 #endif
 
@@ -526,7 +525,7 @@ namespace PD.Base.EntityRepository.ODataClient
 		/// <summary>
 		/// Convert an OData service type name to a <see cref="Type"/>; namespaces may not match up.
 		/// </summary>
-		/// <param name="typeName"></param>
+		/// <param name="typeName">A string for a type, which may not match up with the real type name.</param>
 		/// <returns></returns>
 		public Type ResolveTypeFromName(string typeName)
 		{
@@ -541,51 +540,58 @@ namespace PD.Base.EntityRepository.ODataClient
 				}
 			}
 
-			// Determine the partialTypeName by stripping off any prefixes that match
-			int longestPrefixMatch = 0;
-			foreach (string prefix in _entityMetadataNamespaces)
-			{
-				if (typeName.StartsWith(prefix) && (prefix.Length > longestPrefixMatch))
-				{
-					longestPrefixMatch = prefix.Length;
-				}
-			}
-			string partialTypeName = typeName.Substring(longestPrefixMatch);
+			// First check whether typeName is a real Type.Name
+			resolvedType = TryLoadTypeFromEntityAssemblies(typeName);
 
-			// Try resolving the last segment of the typeName from all the specified namespaces + assemblies
-			foreach (string namespacePrefix in _entityTypeNamespaces)
+			if (resolvedType == null)
 			{
-				string tryTypeName = namespacePrefix + partialTypeName;
-				foreach (Assembly assembly in _entityAssemblies)
+				// Determine the partialTypeName by stripping off any prefixes that match
+				int longestPrefixMatch = 0;
+				foreach (string prefix in _entityMetadataNamespaces)
 				{
-					resolvedType = assembly.GetType(tryTypeName);
+					if (typeName.StartsWith(prefix) && (prefix.Length > longestPrefixMatch))
+					{
+						longestPrefixMatch = prefix.Length;
+					}
+				}
+				string partialTypeName = typeName.Substring(longestPrefixMatch);
+
+				// Try resolving the last segment of the typeName from all the specified namespaces + assemblies
+				foreach (string namespacePrefix in _entityTypeNamespaces)
+				{
+					resolvedType = TryLoadTypeFromEntityAssemblies(namespacePrefix + partialTypeName);
 					if (resolvedType != null)
 					{
 						break;
 					}
 				}
-				if (resolvedType != null)
-				{
-					break;
-				}
 			}
 
-			// Another possibility - typeName is a real type
 			if (resolvedType == null)
 			{
-				resolvedType = Type.GetType(typeName);
+				throw new InvalidOperationException("Unable to resolve type from '" + typeName + "'.");
 			}
-
-			if (resolvedType != null)
-			{
-				lock (this)
-				{ // Cache this work
-					_nameFromTypeCache[resolvedType] = typeName;
-					_typeFromNameCache[typeName] = resolvedType;
-				}
+			
+			lock (this)
+			{ // Cache this work
+				_nameFromTypeCache[resolvedType] = typeName;
+				_typeFromNameCache[typeName] = resolvedType;
 			}
 
 			return resolvedType;
+		}
+
+		private Type TryLoadTypeFromEntityAssemblies(string typeName)
+		{
+			foreach (Assembly assembly in _entityAssemblies)
+			{
+				Type resolvedType = assembly.GetType(typeName);
+				if (resolvedType != null)
+				{
+					return resolvedType;
+				}
+			}
+			return null;
 		}
 
 		/// <summary>
@@ -952,7 +958,7 @@ namespace PD.Base.EntityRepository.ODataClient
 				return entity;
 			}
 		}
-		
+
 		internal bool DeleteEntityFromGraph(object entity, BaseRepository repository)
 		{
 			lock (this)
@@ -1086,19 +1092,18 @@ namespace PD.Base.EntityRepository.ODataClient
 			public CustomDataServiceContext(Uri serviceRoot, ODataClient client)
 				: base(serviceRoot, DataServiceProtocolVersion.V3)
 			{
-				this.ResolveName = client.ResolveNameFromType;
-				this.ResolveType = client.ResolveTypeFromName;
-				this.ResolveEntitySet = client.ResolveEntitySet;
+				ResolveName = client.ResolveNameFromType;
+				ResolveType = client.ResolveTypeFromName;
+				ResolveEntitySet = client.ResolveEntitySet;
 
-				this.AddAndUpdateResponsePreference = DataServiceResponsePreference.IncludeContent;
-				this.MergeOption = MergeOption.PreserveChanges;
+				AddAndUpdateResponsePreference = DataServiceResponsePreference.IncludeContent;
+				MergeOption = MergeOption.PreserveChanges;
 
-				this.IgnoreMissingProperties = false;
+				IgnoreMissingProperties = false;
 			}
 
 		}
 
 		#endregion
-
 	}
 }

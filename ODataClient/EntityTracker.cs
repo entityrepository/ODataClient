@@ -4,7 +4,6 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -39,6 +38,7 @@ namespace PD.Base.EntityRepository.ODataClient
 		/// If not <c>null</c>, this array contains the structural property values that correspond to an unmodified entity.
 		/// </summary>
 		private object[] _unmodifiedStructuralPropertyValues;
+
 		/// <summary>
 		/// If not <c>null</c>, this array contains the non-collection navigation property values that correspond to an unmodified entity.
 		/// </summary>
@@ -87,10 +87,14 @@ namespace PD.Base.EntityRepository.ODataClient
 		}
 
 		internal ODataClient ODataClient
-		{ get { return _oDataClient; } }
+		{
+			get { return _oDataClient; }
+		}
 
 		internal LinkCollectionTracker[] LinkCollectionTrackers
-		{ get { return _linkCollectionTrackers; } }
+		{
+			get { return _linkCollectionTrackers; }
+		}
 
 		internal LinkCollectionTracker GetLinkCollectionTracker(string linkCollectionPropertyName)
 		{
@@ -112,7 +116,8 @@ namespace PD.Base.EntityRepository.ODataClient
 				{
 					_unmodifiedStructuralPropertyValues[i] = property.GetValue(_entity, null);
 				}
-				catch {}
+				catch
+				{}
 			}
 
 			int countNavigationProperties = _entityTypeInfo.NavigationProperties.Length;
@@ -124,7 +129,8 @@ namespace PD.Base.EntityRepository.ODataClient
 				{
 					_unmodifiedNavigationPropertyValues[i] = property.GetValue(_entity, null);
 				}
-				catch {}
+				catch
+				{}
 			}
 
 			_propertyChanged = false;
@@ -189,7 +195,7 @@ namespace PD.Base.EntityRepository.ODataClient
 		internal bool AreNavigationPropertiesUnmodified()
 		{
 			if ((_entity is INotifyPropertyChanged)
-				&& !_propertyChanged)
+			    && !_propertyChanged)
 			{
 				// Shortcut exit - if not INPC events were raised, nothing should be changed.
 				return true;
@@ -233,7 +239,7 @@ namespace PD.Base.EntityRepository.ODataClient
 			foreach (LinkCollectionTracker linkCollectionTracker in _linkCollectionTrackers)
 			{
 				if ((linkCollectionTracker != null)
-					&& !linkCollectionTracker.IsLinkCollectionEqualToUnmodified())
+				    && !linkCollectionTracker.IsLinkCollectionEqualToUnmodified())
 				{
 					return false;
 				}
@@ -245,25 +251,19 @@ namespace PD.Base.EntityRepository.ODataClient
 		internal void RevertEntityToUnmodified(BaseRepository repository)
 		{
 			if ((_entity is INotifyPropertyChanged)
-				&& ! _propertyChanged)
+			    && ! _propertyChanged)
 			{
 				// Shortcut exit - if not INPC events were raised, nothing should be changed.
 				return;
 			}
 			if ((_unmodifiedStructuralPropertyValues == null)
-				|| (_unmodifiedNavigationPropertyValues == null))
+			    || (_unmodifiedNavigationPropertyValues == null))
 			{
 				// It's not possible to revert
 				throw new InvalidOperationException("Can't Revert because the entity's unmodified state was not captured.");
 			}
 
 			// Restore the unmodified property values
-			for (int i = 0; i < _unmodifiedStructuralPropertyValues.Length; ++i)
-			{
-				PropertyInfo property = _entityTypeInfo.StructuralProperties[i];
-				property.SetValue(_entity, _unmodifiedStructuralPropertyValues[i], null);
-			}
-
 			for (int i = 0; i < _unmodifiedNavigationPropertyValues.Length; ++i)
 			{
 				PropertyInfo property = _entityTypeInfo.NavigationProperties[i];
@@ -275,6 +275,11 @@ namespace PD.Base.EntityRepository.ODataClient
 					property.SetValue(_entity, revertToValue, null);
 					repository.DataServiceContext.SetLink(_entity, property.Name, revertToValue);
 				}
+			}
+			for (int i = 0; i < _unmodifiedStructuralPropertyValues.Length; ++i)
+			{
+				PropertyInfo property = _entityTypeInfo.StructuralProperties[i];
+				property.SetValue(_entity, _unmodifiedStructuralPropertyValues[i], null);
 			}
 
 			// Set the state to unmodified in the DataServiceContext
@@ -392,9 +397,9 @@ namespace PD.Base.EntityRepository.ODataClient
 
 				// Handle the case where a navigation property is absent b/c the property was not included
 				if ((propertyValue == null)
-					&& (validationInfo.Category == EntityTypeInfo.PropertyCategory.Navigation)
-					&& !isAdded && isModified
-					&& (IsNavigationPropertyModified(validationInfo.Property, propertyValue) == false))
+				    && (validationInfo.Category == EntityTypeInfo.PropertyCategory.Navigation)
+				    && !isAdded && isModified
+				    && (IsNavigationPropertyModified(validationInfo.Property, propertyValue) == false))
 				{
 					// Property is null, but it's not changed, so skip validation of it
 					continue;

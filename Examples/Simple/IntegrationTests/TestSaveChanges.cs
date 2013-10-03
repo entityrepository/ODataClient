@@ -4,8 +4,6 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-
-using System;
 using PD.Base.EntityRepository.Api;
 using Simple.Model;
 using Xunit;
@@ -24,8 +22,8 @@ namespace Simple.IntegrationTests
 			// Attach referenced object
 			Client.EqualitySemantics.Attach(EqualitySemantics.IdentityOnly);
 
-			var record1 = new EqualityTestRecord() { EqualitySemantic = EqualitySemantics.IdentityOnly, Payload = "record1" };
-			var record2 = new EqualityTestRecord() { EqualitySemantic = EqualitySemantics.IdentityOnly, Payload = "record2" };
+			var record1 = new EqualityTestRecord { EqualitySemantic = EqualitySemantics.IdentityOnly, Payload = "record1" };
+			var record2 = new EqualityTestRecord { EqualitySemantic = EqualitySemantics.IdentityOnly, Payload = "record2" };
 			Assert.Equal(EntityState.Detached, Client.EqualityTestRecords.GetEntityState(record1));
 			Assert.Equal(EntityState.Detached, Client.EqualityTestRecords.GetEntityState(record2));
 

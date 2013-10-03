@@ -4,16 +4,9 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using PD.Base.PortableUtil.Reflection;
 using PD.Base.EntityRepository.Api;
 using PD.Base.EntityRepository.ODataClient;
-using PD.Base.PortableUtil.Enum;
 using Scrum.Model;
 
 namespace Scrum.Web.IntegrationTests
@@ -25,8 +18,8 @@ namespace Scrum.Web.IntegrationTests
 	/// </summary>
 	internal class ScrumClient : DataContext
 	{
-		// TODO: Replace back to localhost
-		private const string c_odataTestServiceUrl = "http://localhost:42200/odata.svc/";
+
+		private const string c_odataTestServiceUrl = "http://localhost:42201/odata/";
 
 		// TODO: Shorten the timeout for real testing to 4000 or so
 		internal const int TestTimeout = 600000; // For debugging, this is 10m

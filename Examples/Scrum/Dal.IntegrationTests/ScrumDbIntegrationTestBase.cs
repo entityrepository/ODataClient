@@ -1,6 +1,8 @@
 ﻿// -----------------------------------------------------------------------
-// <copyright file="ScrumDbIntegrationTestBase.cs" company="PrecisionDemand">
-// Copyright (c) 2013 PrecisionDemand.  All rights reserved.
+// <copyright file="ScrumDbIntegrationTestBase.cs" company="EntityRepository Contributors" year="2013">
+// This software is part of the EntityRepository library
+// Copyright © 2012 EntityRepository Contributors
+// http://entityrepository.codeplex.org/
 // </copyright>
 // -----------------------------------------------------------------------
 
@@ -18,7 +20,7 @@ namespace Scrum.Dal.IntegrationTests
 
 		protected ScrumDbIntegrationTestBase()
 		{
-			Database.SetInitializer(new ScrumDbTestDatabaseInitializer());
+			Database.SetInitializer(new MigrateDatabaseToLatestVersion<ScrumDb, ScrumTestMigrationsConfiguration>());
 		}
 
 		public void EnsureIntegrationDatabaseExists()

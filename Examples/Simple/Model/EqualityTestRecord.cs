@@ -4,7 +4,6 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-
 using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -18,6 +17,7 @@ namespace Simple.Model
 	/// </summary>
 	public class EqualityTestRecord : IEquatable<EqualityTestRecord>, INotifyPropertyChanged
 	{
+
 		// Ensures that once a hash code is returned for an instance, it is never changed.
 		private int _cachedEntityHashCode;
 
@@ -65,16 +65,16 @@ namespace Simple.Model
 					// Not the same instance, but neither entity has been stored in the DB yet.
 					return false;
 				}
-				return this.EqualityTestRecordID == other.EqualityTestRecordID;
+				return EqualityTestRecordID == other.EqualityTestRecordID;
 			}
 			else if (EqualitySemantic == EqualitySemantics.ValuesOnly)
 			{
-				return string.Equals(this.Payload, other.Payload, StringComparison.Ordinal);
+				return string.Equals(Payload, other.Payload, StringComparison.Ordinal);
 			}
 			else if (EqualitySemantic == EqualitySemantics.IdentityAndValues)
 			{
-				return (this.EqualityTestRecordID == other.EqualityTestRecordID)
-				       && string.Equals(this.Payload, other.Payload, StringComparison.Ordinal);
+				return (EqualityTestRecordID == other.EqualityTestRecordID)
+				       && string.Equals(Payload, other.Payload, StringComparison.Ordinal);
 			}
 			else
 			{
@@ -118,7 +118,7 @@ namespace Simple.Model
 				else if (EqualitySemantic == EqualitySemantics.IdentityAndValues)
 				{
 					_cachedEntityHashCode = EqualityTestRecordID.GetHashCode() * 127
-					       ^ (Payload == null ? 0 : Payload.GetHashCode());
+					                        ^ (Payload == null ? 0 : Payload.GetHashCode());
 				}
 
 				if (_cachedEntityHashCode == 0)

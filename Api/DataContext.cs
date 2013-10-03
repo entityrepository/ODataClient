@@ -89,7 +89,8 @@ namespace PD.Base.EntityRepository.Api
 		{
 			if (_dataContextImpl.InitializeTask.IsFaulted)
 			{
-				throw new InitializationException("Could not initialize repository properties because " + _dataContextImpl.ToString() + " initialization failed.", _dataContextImpl.InitializeTask.GetException());
+				throw new InitializationException("Could not initialize repository properties because " + _dataContextImpl + " initialization failed.",
+				                                  _dataContextImpl.InitializeTask.GetException());
 			}
 
 			InitializeRepositoryProperties();
@@ -260,7 +261,7 @@ namespace PD.Base.EntityRepository.Api
 				if (request == null)
 				{
 					throw new ArgumentException(string.Format("Argument #{0} is type {1}, and cannot be cast to {2}.", i, requests[i].GetType().FullName, typeof(IRequest).FullName),
-						"Argument #" + i);
+					                            "Argument #" + i);
 				}
 				requestArray[i] = request;
 			}
@@ -355,22 +356,22 @@ namespace PD.Base.EntityRepository.Api
 
 			// Synchronous call for all entities that match the queries
 			return dataContext.DataContextImpl.InvokeAsync(queries.ToArray()).ContinueWith(
-				completion =>
-				{
-					if (completion.IsFaulted)
-					{
-						// Log(completion.GetException(), "Error occurred while PreLoading...");
-					}
-					// If action is provided, allow post query intialization
-					else if (perResultInitializer != null)
-					{
-						foreach (object query in queries)
-						{
-							perResultInitializer((IEnumerable) query);
-						}
-					}
-				});
-		}		 
+			                                                                               completion =>
+			                                                                               {
+				                                                                               if (completion.IsFaulted)
+				                                                                               {
+					                                                                               // Log(completion.GetException(), "Error occurred while PreLoading...");
+				                                                                               }
+					                                                                               // If action is provided, allow post query intialization
+				                                                                               else if (perResultInitializer != null)
+				                                                                               {
+					                                                                               foreach (object query in queries)
+					                                                                               {
+						                                                                               perResultInitializer((IEnumerable) query);
+					                                                                               }
+				                                                                               }
+			                                                                               });
+		}
 
 	}
 }

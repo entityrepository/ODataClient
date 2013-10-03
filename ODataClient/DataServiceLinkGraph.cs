@@ -4,7 +4,6 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-
 using System;
 using System.Collections.Generic;
 using System.Data.Services.Client;
@@ -52,8 +51,8 @@ namespace PD.Base.EntityRepository.ODataClient
 			{
 				object entity = frontier.Dequeue();
 				if ((entity == null)
-					|| _entities.Contains(entity))
-				{	// Skip it
+				    || _entities.Contains(entity))
+				{ // Skip it
 					continue;
 				}
 
@@ -82,5 +81,6 @@ namespace PD.Base.EntityRepository.ODataClient
 		{
 			get { return _links; }
 		}
+
 	}
 }

@@ -1,9 +1,15 @@
-﻿using PD.Base.EntityRepository.ODataClient;
-using PD.Base.PortableUtil.Exceptions;
-using PD.Base.PortableUtil.Threading;
+﻿// -----------------------------------------------------------------------
+// <copyright file="MainPage.xaml.cs" company="PrecisionDemand">
+// Copyright (c) 2013 PrecisionDemand.  All rights reserved.
+// </copyright>
+// -----------------------------------------------------------------------
+
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using PD.Base.EntityRepository.ODataClient;
+using PD.Base.PortableUtil.Exceptions;
+using PD.Base.PortableUtil.Threading;
 
 namespace Scrum.Silverlight
 {
@@ -23,7 +29,8 @@ namespace Scrum.Silverlight
 			{
 				// TODO: Show a busy animation while initializing
 				_scrumClient = new ScrumClient();
-				_scrumClient.InitializeTask.ContinueInCurrentSynchronizationContext(task => MessageBox.Show("InitializeTask completed."),// TODO: Turn off busy animation, if there was one.
+				_scrumClient.InitializeTask.ContinueInCurrentSynchronizationContext(task => MessageBox.Show("InitializeTask completed."),
+				                                                                    // TODO: Turn off busy animation, if there was one.
 				                                                                    task => ShowFatalExceptionAndExit("Fatal error initializing web service client", task.Exception));
 			}
 			catch (Exception ex)
@@ -36,8 +43,8 @@ namespace Scrum.Silverlight
 		{
 			string message = exception.FormatForUser();
 			// or: message = exception.ToString();
-			MessageBox.Show(/*Application.Current.MainWindow, */message, caption + ", exiting...", MessageBoxButton.OK);
-			
+			MessageBox.Show( /*Application.Current.MainWindow, */message, caption + ", exiting...", MessageBoxButton.OK);
+
 			// TODO: Now what to do after a fatal initialization error?
 			// This doesn't work in a browser...
 			Application.Current.MainWindow.Close();
@@ -55,15 +62,15 @@ namespace Scrum.Silverlight
 				var completionTask = _scrumClient.InvokeAsync(projectsQuery);
 
 				completionTask.ContinueInCurrentSynchronizationContext(
-					(task) =>
-					{
-						if (task.IsFaulted)
-						{
-							MessageBox.Show(task.Exception.ToString());
-							return;
-						}
-						cboProjects.ItemsSource = projectsQuery;
-					});
+				                                                       (task) =>
+				                                                       {
+					                                                       if (task.IsFaulted)
+					                                                       {
+						                                                       MessageBox.Show(task.Exception.ToString());
+						                                                       return;
+					                                                       }
+					                                                       cboProjects.ItemsSource = projectsQuery;
+				                                                       });
 			}
 			catch (Exception ex)
 			{

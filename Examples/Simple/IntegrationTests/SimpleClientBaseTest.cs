@@ -4,8 +4,6 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-
-using System;
 using Xunit;
 
 namespace Simple.IntegrationTests
@@ -29,7 +27,9 @@ namespace Simple.IntegrationTests
 		}
 
 		protected SimpleClient Client
-		{ get { return _client; } }
+		{
+			get { return _client; }
+		}
 
 	}
 }

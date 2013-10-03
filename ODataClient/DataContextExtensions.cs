@@ -4,7 +4,6 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-
 using System;
 using System.Collections;
 using System.Threading.Tasks;
@@ -19,6 +18,7 @@ namespace PD.Base.EntityRepository.ODataClient
 	/// </summary>
 	public static class DataContextExtensions
 	{
+
 		/// <summary>
 		/// Pre-loads the <see cref="DbEnum{TId,T}"/>-derived entities in <paramref name="dataContext"/>.
 		/// </summary>
@@ -46,7 +46,7 @@ namespace PD.Base.EntityRepository.ODataClient
 							DbEnumManager.RegisterDbEnumValue(dbEnumValue);
 						}
 					}
-					catch (Exception)// ex)
+					catch (Exception) // ex)
 					{
 						// TODO: Add logging support
 						// Log(ex, "While preloading DbEnums");

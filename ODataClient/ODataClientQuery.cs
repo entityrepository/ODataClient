@@ -34,10 +34,12 @@ namespace PD.Base.EntityRepository.ODataClient
 	[DebuggerDisplay("{_dataServiceQuery}")]
 	internal class ODataClientQuery<TEntity> : ODataClientRequest, IQueryRequest<TEntity>, IQueryProvider
 	{
+
 		/// <summary>
 		/// The WCF Data Services Client query associated with this query.  Never <c>null</c>.
 		/// </summary>
 		private readonly DataServiceQuery<TEntity> _dataServiceQuery;
+
 		/// <summary>
 		/// The results returned for this query.  May be <c>null</c>.
 		/// </summary>
@@ -221,7 +223,7 @@ namespace PD.Base.EntityRepository.ODataClient
 					{
 						BaseRepository repository;
 						if (client.RepositoriesByType.TryGetValue(linkedEntity.GetType(), out repository))
-						{					
+						{
 							repository.ProcessQueryResult(linkedEntity);
 						}
 					}
@@ -258,6 +260,7 @@ namespace PD.Base.EntityRepository.ODataClient
 			return _dataServiceQuery.ToString();
 		}
 
+
 		/// <summary>
 		/// Supports binding to a generic method.  Type.GetMethod() doesn't support finding appropriate generic methods out of the box,
 		/// so this is required.
@@ -273,7 +276,13 @@ namespace PD.Base.EntityRepository.ODataClient
 				_genericMethodTypeParameters = genericMethodTypeParameters;
 			}
 
-			public override MethodBase BindToMethod(BindingFlags bindingAttr, MethodBase[] match, ref object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] names, out object state)
+			public override MethodBase BindToMethod(BindingFlags bindingAttr,
+			                                        MethodBase[] match,
+			                                        ref object[] args,
+			                                        ParameterModifier[] modifiers,
+			                                        CultureInfo culture,
+			                                        string[] names,
+			                                        out object state)
 			{
 				foreach (MethodBase evalMethod in match)
 				{

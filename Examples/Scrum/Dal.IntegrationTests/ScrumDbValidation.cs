@@ -20,7 +20,7 @@ namespace Scrum.Dal.IntegrationTests
 
 		public ScrumDbValidation()
 		{
-			this.EnsureIntegrationDatabaseExists();
+			EnsureIntegrationDatabaseExists();
 		}
 
 		[Fact, AutoRollback]

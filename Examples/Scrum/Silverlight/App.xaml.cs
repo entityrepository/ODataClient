@@ -1,4 +1,10 @@
-﻿using System;
+﻿// -----------------------------------------------------------------------
+// <copyright file="App.xaml.cs" company="PrecisionDemand">
+// Copyright (c) 2013 PrecisionDemand.  All rights reserved.
+// </copyright>
+// -----------------------------------------------------------------------
+
+using System;
 using System.Windows;
 
 namespace Scrum.Silverlight
@@ -8,22 +14,20 @@ namespace Scrum.Silverlight
 
 		public App()
 		{
-			this.Startup += this.Application_Startup;
-			this.Exit += this.Application_Exit;
-			this.UnhandledException += this.Application_UnhandledException;
+			Startup += Application_Startup;
+			Exit += Application_Exit;
+			UnhandledException += Application_UnhandledException;
 
 			InitializeComponent();
 		}
 
 		private void Application_Startup(object sender, StartupEventArgs e)
 		{
-			this.RootVisual = new MainPage();
+			RootVisual = new MainPage();
 		}
 
 		private void Application_Exit(object sender, EventArgs e)
-		{
-
-		}
+		{}
 
 		private void Application_UnhandledException(object sender, ApplicationUnhandledExceptionEventArgs e)
 		{
@@ -52,8 +56,8 @@ namespace Scrum.Silverlight
 				System.Windows.Browser.HtmlPage.Window.Eval("throw new Error(\"Unhandled Error in Silverlight Application " + errorMsg + "\");");
 			}
 			catch (Exception)
-			{
-			}
+			{}
 		}
+
 	}
 }

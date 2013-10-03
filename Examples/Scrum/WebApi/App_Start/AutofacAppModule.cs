@@ -27,7 +27,12 @@ namespace Scrum.WebApi
 		protected override void Load(ContainerBuilder builder)
 		{
 			// Required: How to instantiate the DbContext; and share it amongst objects participating in a single request.
-			builder.Register(c => new ScrumDb()).InstancePerLifetimeScope();
+			builder.Register<ScrumDb>(c =>
+			{
+				var db = new ScrumDb();
+				db.AttachDbEnums();
+				return db;
+			}).InstancePerLifetimeScope();
 
 			// Required: Register global datamodel metadata
 			using (ScrumDb scrumDb = new ScrumDb())

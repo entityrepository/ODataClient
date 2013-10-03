@@ -5,6 +5,7 @@
 // -----------------------------------------------------------------------
 
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using Microsoft.Data.Edm;
 
@@ -21,6 +22,10 @@ namespace PD.Base.EntityRepository.ODataClient
 
 		internal EntitySetInfo(IEdmModel edmModel, IEdmEntitySet edmEntitySet, ITypeResolver typeResolver)
 		{
+			Contract.Assert(edmModel != null);
+			Contract.Assert(edmEntitySet != null);
+			Contract.Assert(typeResolver != null);
+
 			Name = edmEntitySet.Name;
 			ElementType = new EntityTypeInfo(edmModel, edmEntitySet.ElementType, typeResolver);
 			var entityTypes = new List<EntityTypeInfo>(3) { ElementType };

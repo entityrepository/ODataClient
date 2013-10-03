@@ -31,11 +31,9 @@ namespace Scrum.Dal
 
 			// By default, this is on, but should be disabled for data services server context.
 			Configuration.ValidateOnSaveEnabled = true;
-
-			AttachDbEnums();
 		}
 
-		private void AttachDbEnums()
+		public void AttachDbEnums()
 		{
 			if (! Database.Exists())
 			{

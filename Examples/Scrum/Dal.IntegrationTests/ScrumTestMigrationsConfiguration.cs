@@ -23,6 +23,14 @@ namespace Scrum.Dal.IntegrationTests
 
 		protected override void Seed(ScrumDb scrumDb)
 		{
+			// Skip rest of seed iff values are already present
+			if ((scrumDb.Priority.Count() >= Priority.All.Count())
+			    && (scrumDb.Users.Count() >= 2)
+			    && (scrumDb.Projects.Count() >= 2))
+			{
+				return;
+			}
+
 			// Add DbEnum-like values
 			SeedStaticReadOnlyFieldValues<Priority>(scrumDb);
 			SeedStaticReadOnlyFieldValues<Status>(scrumDb);
@@ -104,7 +112,8 @@ namespace Scrum.Dal.IntegrationTests
 			}
 		}
 
-		public static void SeedStaticReadOnlyFieldValues<TEntity>(DbContext dbContext) where TEntity : class
+		public static void SeedStaticReadOnlyFieldValues<TEntity>(DbContext dbContext)
+			where TEntity : class
 		{
 			DbSet<TEntity> dbSet = dbContext.Set<TEntity>();
 
@@ -115,7 +124,7 @@ namespace Scrum.Dal.IntegrationTests
 				TEntity staticValue = (TEntity) staticProperty.GetValue(null);
 				staticPropertyValues.Add(staticValue);
 			}
-			dbSet.AddOrUpdate(staticPropertyValues.ToArray());
+			dbSet.AddOrUpdate<TEntity>(staticPropertyValues.ToArray());
 		}
 
 	}

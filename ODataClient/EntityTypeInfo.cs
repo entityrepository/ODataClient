@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
@@ -44,6 +45,10 @@ namespace PD.Base.EntityRepository.ODataClient
 
 		internal EntityTypeInfo(IEdmModel edmModel, IEdmEntityType edmEntityType, ITypeResolver typeResolver)
 		{
+			Contract.Assert(edmModel != null);
+			Contract.Assert(edmEntityType != null);
+			Contract.Assert(typeResolver != null);
+
 			_edmEntityType = edmEntityType;
 			string edmTypeName = edmEntityType.FullName();
 			_type = typeResolver.ResolveTypeFromName(edmTypeName);

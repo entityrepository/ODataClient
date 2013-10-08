@@ -4,9 +4,9 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
+using Scrum.Model.Base;
 using System;
 using System.ComponentModel.DataAnnotations;
-using Scrum.Model.Base;
 
 namespace Scrum.Model
 {

@@ -96,6 +96,7 @@ namespace PD.Base.EntityRepository.ODataClient
 
 		internal override object ProcessQueryResult(object entity)
 		{
+			// Convert the untyped entity to a call to typed ProcessQueryResult(TEntity)
 			if (entity == null)
 			{
 				return null;

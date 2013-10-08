@@ -101,6 +101,7 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="ScrumClasses.cd" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="PD.Base.PortableUtil, Version=1.1.0.3511, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>

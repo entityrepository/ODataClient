@@ -83,7 +83,6 @@ namespace Scrum.Model
 		public ICollection<ProjectArea> Areas
 		{
 			get { return EnsureCollectionProperty(ref _areas); }
-			set { SetCollectionProperty(ref _areas, value); }
 		}
 
 		//public Priority Priority { get; set; }
@@ -114,13 +113,11 @@ namespace Scrum.Model
 		public ICollection<ProjectVersion> AffectsVersions
 		{
 			get { return EnsureCollectionProperty(ref _affectsVersions); }
-			set { SetCollectionProperty(ref _affectsVersions, value); }
 		}
 
 		public ICollection<ProjectVersion> FixVersions
 		{
 			get { return EnsureCollectionProperty(ref _fixVersions); }
-			set { SetCollectionProperty(ref _fixVersions, value); }
 		}
 
 		public User Creator
@@ -159,13 +156,11 @@ namespace Scrum.Model
 		public ICollection<User> AssignedTo
 		{
 			get { return EnsureCollectionProperty(ref _assignedTo); }
-			set { SetCollectionProperty(ref _assignedTo, value); }
 		}
 
 		public ICollection<User> Subscribers
 		{
 			get { return EnsureCollectionProperty(ref _subscribers); }
-			set { SetCollectionProperty(ref _subscribers, value); }
 		}
 
 		public Client Client
@@ -183,7 +178,6 @@ namespace Scrum.Model
 
 		public TimeSpan? TimeEstimate { get; set; }
 
-		[Required]
 		public DateTime Created { get; set; }
 
 		public DateTime? Due { get; set; }
@@ -191,19 +185,16 @@ namespace Scrum.Model
 		public ICollection<WorkItemMessage> Messages
 		{
 			get { return EnsureCollectionProperty(ref _messages); }
-			set { SetCollectionProperty(ref _messages, value); }
 		}
 
 		public ICollection<WorkItemPropertyChange> ChangeHistory
 		{
 			get { return EnsureCollectionProperty(ref _changeHistory); }
-			set { SetCollectionProperty(ref _changeHistory, value); }
 		}
 
 		public ICollection<WorkItemTimeLog> TimeLog
 		{
 			get { return EnsureCollectionProperty(ref _timeLog); }
-			set { SetCollectionProperty(ref _timeLog, value); }
 		}
 
 	}

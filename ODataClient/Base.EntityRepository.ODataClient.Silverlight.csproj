@@ -116,18 +116,18 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.Data.Edm.SL">
-      <HintPath>..\packages\Microsoft.Data.Edm.5.6.0\lib\sl4\Microsoft.Data.Edm.SL.dll</HintPath>
+      <HintPath>$(PackagesDir)\Microsoft.Data.Edm.5.6.0\lib\sl4\Microsoft.Data.Edm.SL.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Data.OData.SL">
-      <HintPath>..\packages\Microsoft.Data.OData.5.6.0\lib\sl4\Microsoft.Data.OData.SL.dll</HintPath>
+      <HintPath>$(PackagesDir)\Microsoft.Data.OData.5.6.0\lib\sl4\Microsoft.Data.OData.SL.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Data.Services.Client.SL">
-      <HintPath>..\packages\Microsoft.Data.Services.Client.5.6.0\lib\sl4\Microsoft.Data.Services.Client.SL.dll</HintPath>
+      <HintPath>$(PackagesDir)\Microsoft.Data.Services.Client.5.6.0\lib\sl4\Microsoft.Data.Services.Client.SL.dll</HintPath>
     </Reference>
     <Reference Include="mscorlib" />
-    <Reference Include="PD.Base.PortableUtil, Version=1.1.0.3511, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="PD.Base.PortableUtil">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\PD.Base.PortableUtil.1.1.0.3511-debug\lib\portable-net45+sl50\PD.Base.PortableUtil.dll</HintPath>
+      <HintPath>$(PackagesDir)\PD.Base.PortableUtil.1.1.0.3724-debug\lib\portable-net45+sl50\PD.Base.PortableUtil.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations, Version=5.0.5.0, Culture=neutral, PublicKeyToken=ddd0da4d3e678217, processorArchitecture=MSIL" />
@@ -138,7 +138,7 @@
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.Spatial.SL">
-      <HintPath>..\packages\System.Spatial.5.6.0\lib\sl4\System.Spatial.SL.dll</HintPath>
+      <HintPath>$(PackagesDir)\System.Spatial.5.6.0\lib\sl4\System.Spatial.SL.dll</HintPath>
     </Reference>
     <Reference Include="System.Windows" />
     <Reference Include="System.Xml" />

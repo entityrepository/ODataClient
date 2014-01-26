@@ -19,7 +19,7 @@ namespace Scrum.Web.IntegrationTests
 	internal class ScrumClient : DataContext
 	{
 
-		private const string c_odataTestServiceUrl = "http://localhost:42201/odata/";
+		private const string c_odataTestServiceUrl = "http://localhost:27704/odata/";
 
 		// TODO: Shorten the timeout for real testing to 4000 or so
 		internal const int TestTimeout = 600000; // For debugging, this is 10m

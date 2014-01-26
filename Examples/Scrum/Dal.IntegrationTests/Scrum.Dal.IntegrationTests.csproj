@@ -97,17 +97,15 @@
     <CodeContractsReferenceAssembly>DoNotBuild</CodeContractsReferenceAssembly>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(PackagesDir)\EntityFramework.6.0.1\lib\net45\EntityFramework.dll</HintPath>
+    <Reference Include="EntityFramework">
+      <HintPath>..\..\..\packages\EntityFramework.6.0.2\lib\net45\EntityFramework.dll</HintPath>
     </Reference>
-    <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(PackagesDir)\EntityFramework.6.0.1\lib\net45\EntityFramework.SqlServer.dll</HintPath>
+    <Reference Include="EntityFramework.SqlServer">
+      <HintPath>..\..\..\packages\EntityFramework.6.0.2\lib\net45\EntityFramework.SqlServer.dll</HintPath>
     </Reference>
-    <Reference Include="PD.Base.PortableUtil">
+    <Reference Include="PD.Base.PortableUtil, Version=1.1.0.4313, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(PackagesDir)\PD.Base.PortableUtil.1.1.0.3743-debug\lib\portable-net45+sl50\PD.Base.PortableUtil.dll</HintPath>
+      <HintPath>..\..\..\packages\PD.Base.PortableUtil.1.1.0.4313-debug\lib\portable-net45+sl50\PD.Base.PortableUtil.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
@@ -146,6 +144,9 @@
       <Project>{41112375-6520-4b62-8e81-1673d253b7b2}</Project>
       <Name>Scrum.Model</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(MSBuildExtensionsPath)\PrecisionDemand\PD.Common.targets" />

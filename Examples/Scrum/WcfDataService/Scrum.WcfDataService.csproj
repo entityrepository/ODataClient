@@ -131,9 +131,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(PackagesDir)\Microsoft.Data.Services.Client.5.6.0\lib\net40\Microsoft.Data.Services.Client.dll</HintPath>
     </Reference>
-    <Reference Include="PD.Base.PortableUtil">
+    <Reference Include="PD.Base.PortableUtil, Version=1.1.0.4313, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(PackagesDir)\PD.Base.PortableUtil.1.1.0.3743-debug\lib\portable-net45+sl50\PD.Base.PortableUtil.dll</HintPath>
+      <HintPath>..\..\..\packages\PD.Base.PortableUtil.1.1.0.4313-debug\lib\portable-net45+sl50\PD.Base.PortableUtil.dll</HintPath>
     </Reference>
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Data.Entity" />

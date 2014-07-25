@@ -132,6 +132,7 @@
     <Compile Include="WorkItemMessage.cs" />
     <Compile Include="WorkItemPropertyChange.cs" />
     <Compile Include="WorkItemTimeLog.cs" />
+    <Compile Include="WorkItemVersion.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(MSBuildExtensionsPath)\PrecisionDemand\PD.Common.targets" />

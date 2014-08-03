@@ -61,8 +61,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(PackagesDir)\Microsoft.Data.Services.Client.5.6.2\lib\net40\Microsoft.Data.Services.Client.dll</HintPath>
     </Reference>
-    <Reference Include="PD.Base.PortableUtil">
-      <HintPath>$(PackagesDir)\PD.Base.PortableUtil.1.1.0.6288-debug\lib\portable-net45+sl50\PD.Base.PortableUtil.dll</HintPath>
+    <Reference Include="PD.Base.PortableUtil, Version=1.1.0.6291, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(PackagesDir)\PD.Base.PortableUtil.1.1.0.6291-debug\lib\portable-net45+sl50\PD.Base.PortableUtil.dll</HintPath>
     </Reference>
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.ServiceModel.Web" />

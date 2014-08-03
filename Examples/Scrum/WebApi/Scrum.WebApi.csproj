@@ -70,9 +70,8 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(PackagesDir)\Newtonsoft.Json.6.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="PD.Base.PortableUtil, Version=1.1.0.6288, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(PackagesDir)\PD.Base.PortableUtil.1.1.0.6288-debug\lib\portable-net45+sl50\PD.Base.PortableUtil.dll</HintPath>
+    <Reference Include="PD.Base.PortableUtil">
+      <HintPath>$(PackagesDir)\PD.Base.PortableUtil.1.1.0.6291-debug\lib\portable-net45+sl50\PD.Base.PortableUtil.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />

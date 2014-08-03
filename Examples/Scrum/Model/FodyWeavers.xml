@@ -1,4 +1,4 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Weavers>
-  <PropertyChanged />
+  <PropertyChanged AddinDirectoryPath="$(PackagesDir)\PropertyChanged.Fody.1.48.2.0\Lib\portable-net4+sl4+wp8+win8+wpa81+MonoAndroid16+MonoTouch40\"/>
 </Weavers>

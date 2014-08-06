@@ -35,7 +35,7 @@
       <HintPath>$(PackagesDir)\PD.Base.PortableUtil.1.1.0.6291-debug\lib\portable-net45+sl50\PD.Base.PortableUtil.dll</HintPath>
     </Reference>
     <Reference Include="PropertyChanged.Fody">
-      <HintPath>$(PackagesDir)\PropertyChanged.Fody.1.48.2.0\Lib\portable-net4+sl4+wp8+win8+wpa81+MonoAndroid16+MonoTouch40\PropertyChanged.Fody.dll</HintPath>
+      <HintPath>$(PackagesDir)\PropertyChanged.Fody.1.48.2.0\Lib\portable-net4+sl4+wp8+win8+wpa81+MonoAndroid16+MonoTouch40\PropertyChanged.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

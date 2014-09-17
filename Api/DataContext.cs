@@ -351,7 +351,9 @@ namespace PD.Base.EntityRepository.Api
 			if (! queries.Any())
 			{
 				// Log("No types preloaded");
-				return new Task(() => { });
+				Task task = new Task(() => { });
+			    task.Start();
+			    return task;
 			}
 
 			// Synchronous call for all entities that match the queries

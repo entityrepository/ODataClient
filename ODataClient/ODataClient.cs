@@ -26,6 +26,7 @@ using Microsoft.Data.Edm.Validation;
 using PD.Base.EntityRepository.Api;
 using PD.Base.EntityRepository.Api.Exceptions;
 using PD.Base.PortableUtil.Model;
+using TaskExtensions = PD.Base.EntityRepository.Api.TaskExtensions;
 
 namespace PD.Base.EntityRepository.ODataClient
 {
@@ -381,9 +382,7 @@ namespace PD.Base.EntityRepository.ODataClient
 #else
 					s_trace.TraceInformation("No changes in SaveChanges().");
 #endif
-					Task doNothingTask = new Task(() => { });
-					doNothingTask.Start();
-					return doNothingTask;
+					return TaskExtensions.CompletedTask;
 				}
 
 				LogChanges("Saving changes:");

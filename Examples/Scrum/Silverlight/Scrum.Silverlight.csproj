@@ -107,9 +107,9 @@
       <HintPath>$(PackagesDir)\Microsoft.Data.Services.Client.5.6.2\lib\sl4\Microsoft.Data.Services.Client.dll</HintPath>
     </Reference>
     <Reference Include="mscorlib" />
-    <Reference Include="PD.Base.PortableUtil, Version=1.1.0.6291, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="PD.Base.PortableUtil, Version=1.1.0.6780, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(PackagesDir)\PD.Base.PortableUtil.1.1.0.6291-debug\lib\portable-net45+sl50\PD.Base.PortableUtil.dll</HintPath>
+      <HintPath>$(PackagesDir)\PD.Base.PortableUtil.1.1.0.6780-debug\lib\portable-net45+sl50\PD.Base.PortableUtil.dll</HintPath>
     </Reference>
     <Reference Include="System.Spatial.SL, Version=5.6.2.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -146,9 +146,7 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config">
-      <SubType>Designer</SubType>
-    </None>
+    <None Include="packages.config" />
     <None Include="Properties\AppManifest.xml" />
   </ItemGroup>
   <ItemGroup>

@@ -11,6 +11,7 @@
     <AssemblyName>Simple.Model</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <NuGetPackageImportStamp>d10f5559</NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -30,12 +31,14 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="PD.Base.PortableUtil, Version=1.1.0.6291, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="PD.Base.PortableUtil, Version=1.1.0.6780, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(PackagesDir)\PD.Base.PortableUtil.1.1.0.6291-debug\lib\portable-net45+sl50\PD.Base.PortableUtil.dll</HintPath>
+      <HintPath>..\..\..\packages\PD.Base.PortableUtil.1.1.0.6780-debug\lib\portable-net45+sl50\PD.Base.PortableUtil.dll</HintPath>
     </Reference>
-    <Reference Include="PropertyChanged.Fody">
-      <HintPath>$(PackagesDir)\PropertyChanged.Fody.1.48.2.0\Lib\portable-net4+sl4+wp8+win8+wpa81+MonoAndroid16+MonoTouch40\PropertyChanged.dll</HintPath>
+    <Reference Include="PropertyChanged, Version=1.48.4.0, Culture=neutral, PublicKeyToken=ee3ee20bcf148ddd, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\packages\PropertyChanged.Fody.1.48.4\Lib\portable-net4+sl4+wp8+win8+wpa81+MonoAndroid16+MonoTouch40\PropertyChanged.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

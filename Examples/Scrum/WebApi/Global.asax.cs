@@ -4,10 +4,11 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
+using EntityRepository.ODataServer.Ioc;
+using SimpleInjector;
+using SimpleInjector.Integration.WebApi;
 using System.Web.Http;
 using System.Web.Mvc;
-using System.Web.Routing;
-using EntityRepository.ODataServer.Autofac;
 
 namespace Scrum.WebApi
 {
@@ -18,13 +19,18 @@ namespace Scrum.WebApi
 
 		protected void Application_Start()
 		{
+			// ASP.NET MVC setup
 			AreaRegistration.RegisterAllAreas();
-
-			AutofacConfiguration.Configure(GlobalConfiguration.Configuration, new AutofacAppModule());
-
-			WebApiConfig.Register(GlobalConfiguration.Configuration);
 			FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);
 			//MvcRouteConfig.RegisterRoutes(RouteTable.Routes);
+
+			// DI config
+			var container = new Container(new ContainerOptions() { AllowOverridingRegistrations = true });
+			container.RegisterModules(new ODataServiceModule(), new AppModule());
+
+			// Web API config
+			GlobalConfiguration.Configuration.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
+			GlobalConfiguration.Configure(WebApiConfig.Register);
 		}
 
 	}

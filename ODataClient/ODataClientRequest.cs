@@ -5,7 +5,7 @@
 // -----------------------------------------------------------------------
 
 using System;
-using System.Data.Services.Client;
+using Microsoft.OData.Client;
 using PD.Base.EntityRepository.Api;
 
 namespace PD.Base.EntityRepository.ODataClient

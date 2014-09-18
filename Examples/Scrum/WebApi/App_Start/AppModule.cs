@@ -1,48 +1,45 @@
 ﻿// -----------------------------------------------------------------------
-// <copyright file="AutofacAppModule.cs" company="EntityRepository Contributors" year="2013">
+// <copyright file="AppModule.cs" company="EntityRepository Contributors" year="2013">
 // This software is part of the EntityRepository library
 // Copyright © 2012 EntityRepository Contributors
 // http://entityrepository.codeplex.org/
 // </copyright>
 // -----------------------------------------------------------------------
 
-using Autofac;
-using EntityRepository.ODataServer;
-using EntityRepository.ODataServer.Autofac;
 using EntityRepository.ODataServer.EF;
+using EntityRepository.ODataServer.Ioc;
 using EntityRepository.ODataServer.Model;
 using Scrum.Dal;
-using System.Web.Http;
-using System.Web.Http.OData;
-using System.Web.Http.OData.Query;
+using SimpleInjector;
+using SimpleInjector.Integration.WebApi;
 
 namespace Scrum.WebApi
 {
 	/// <summary>
 	/// Handles configuration of application specific types in AutoFac.
 	/// </summary>
-	public class AutofacAppModule : Module
+	public class AppModule : IModule
 	{
 
-		protected override void Load(ContainerBuilder builder)
+		public void RegisterServices(Container container)
 		{
 			// Required: How to instantiate the DbContext; and share it amongst objects participating in a single request.
-			builder.Register<ScrumDb>(c =>
-			{
-				var db = new ScrumDb();
-				db.AttachDbEnums();
-				return db;
-			}).InstancePerLifetimeScope();
+			var webApiRequestLifestyle = new WebApiRequestLifestyle(true);
+			var hybridLifestyle = Lifestyle.CreateHybrid(() => webApiRequestLifestyle.GetCurrentScope(container) == null, Lifestyle.Transient, webApiRequestLifestyle);
+			container.Register(() =>
+			                   {
+				                   var db = new ScrumDb();
+				                   db.AttachDbEnums();
+				                   return db;
+			                   },
+			                   hybridLifestyle);
+			container.RegisterLazy<ScrumDb>();
 
 			// Required: Register global datamodel metadata
-			using (ScrumDb scrumDb = new ScrumDb())
-			{
-				var containerMetadata = new DbContextMetadata<ScrumDb>(scrumDb);
-				builder.RegisterInstance(containerMetadata).As<IContainerMetadata<ScrumDb>>();
-			}
+			container.RegisterSingle<IContainerMetadata<ScrumDb>, DbContextMetadata<ScrumDb>>();
 
 			// Query validation settings could be specified here
-			//builder.RegisterInstance(new ODataValidationSettings
+			//container.RegisterInstance(new ODataValidationSettings
 			//{
 			//	MaxExpansionDepth = 15,
 			//	MaxTop = 200

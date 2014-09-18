@@ -9,8 +9,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
-using System.Data.Services.Client;
-using System.Data.Services.Common;
+using Microsoft.OData.Client;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
@@ -20,9 +19,9 @@ using System.ServiceModel;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
-using Microsoft.Data.Edm;
-using Microsoft.Data.Edm.Csdl;
-using Microsoft.Data.Edm.Validation;
+using Microsoft.OData.Edm;
+using Microsoft.OData.Edm.Csdl;
+using Microsoft.OData.Edm.Validation;
 using PD.Base.EntityRepository.Api;
 using PD.Base.EntityRepository.Api.Exceptions;
 using PD.Base.PortableUtil.Model;
@@ -388,7 +387,7 @@ namespace PD.Base.EntityRepository.ODataClient
 
 				LogChanges("Saving changes:");
 				Task<DataServiceResponse> taskResponse =
-					Task.Factory.FromAsync<DataServiceResponse>((callback, state) => _dataServiceContext.BeginSaveChanges(SaveChangesOptions.Batch, callback, state),
+					Task.Factory.FromAsync<DataServiceResponse>((callback, state) => _dataServiceContext.BeginSaveChanges(SaveChangesOptions.BatchWithSingleChangeset, callback, state),
 					                                            _dataServiceContext.EndSaveChanges,
 					                                            null); // state == null for now...
 				return taskResponse.ContinueWith(ProcessSaveChangesResponse);
@@ -451,24 +450,19 @@ namespace PD.Base.EntityRepository.ODataClient
 					}
 
 					// Store all the namespaces - needed for ResolveTypeFromName() to work
-					foreach (IEdmEntityContainer entityContainer in _edmModel.EntityContainers())
-					{
+					IEdmEntityContainer entityContainer = _edmModel.EntityContainer;
 						_entityMetadataNamespaces.Add(entityContainer.Namespace);
-					}
 
 					// Store all the EntitySets
-					foreach (IEdmEntityContainer entityContainer in _edmModel.EntityContainers())
+					foreach (IEdmEntitySet edmEntitySet in entityContainer.EntitySets())
 					{
-						foreach (IEdmEntitySet edmEntitySet in entityContainer.EntitySets())
-						{
-							var entitySetInfo = new EntitySetInfo(_edmModel, edmEntitySet, this);
-							_entitySets.Add(entitySetInfo.Name, entitySetInfo);
+						var entitySetInfo = new EntitySetInfo(_edmModel, edmEntitySet, this);
+						_entitySets.Add(entitySetInfo.Name, entitySetInfo);
 
-							// Store the entity types contained in each entity set
-							foreach (EntityTypeInfo typeInfo in entitySetInfo.EntityTypes)
-							{
-								_entityTypeInfos.Add(typeInfo.EntityType, typeInfo);
-							}
+						// Store the entity types contained in each entity set
+						foreach (EntityTypeInfo typeInfo in entitySetInfo.EntityTypes)
+						{
+							_entityTypeInfos.Add(typeInfo.EntityType, typeInfo);
 						}
 					}
 
@@ -1090,7 +1084,7 @@ namespace PD.Base.EntityRepository.ODataClient
 			/// <param name="serviceRoot"></param>
 			/// <param name="client"></param>
 			public CustomDataServiceContext(Uri serviceRoot, ODataClient client)
-				: base(serviceRoot, DataServiceProtocolVersion.V3)
+				: base(serviceRoot)
 			{
 				ResolveName = client.ResolveNameFromType;
 				ResolveType = client.ResolveTypeFromName;

@@ -49,7 +49,7 @@ namespace Scrum.Web.IntegrationTests
 		public void TestSimpleSelectAsync()
 		{
 			// Select all
-			IQueryable<WorkItem> query = _client.WorkItems.Select(workItem => workItem);
+			IQueryable<WorkItem> query = _client.WorkItems;
 			var queryCompletion = _client.InvokeAsync(query);
 			var completion = queryCompletion.ContinueWith(
 			                                              task =>

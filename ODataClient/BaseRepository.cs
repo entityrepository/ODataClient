@@ -6,7 +6,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Data.Services.Client;
+using Microsoft.OData.Client;
 using System.Linq;
 using PD.Base.EntityRepository.Api;
 

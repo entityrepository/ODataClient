@@ -4,10 +4,10 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
+using Microsoft.OData.Edm;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
-using Microsoft.Data.Edm;
 
 namespace PD.Base.EntityRepository.ODataClient
 {
@@ -27,11 +27,11 @@ namespace PD.Base.EntityRepository.ODataClient
 			Contract.Assert(typeResolver != null);
 
 			Name = edmEntitySet.Name;
-			ElementType = new EntityTypeInfo(edmModel, edmEntitySet.ElementType, typeResolver);
+			ElementType = new EntityTypeInfo(edmModel, edmEntitySet.Type as IEdmEntityType, typeResolver);
 			var entityTypes = new List<EntityTypeInfo>(3) { ElementType };
 
 			// Create an EntityTypeInfo for any derived types in the model
-			foreach (var edmDerivedType in edmModel.FindAllDerivedTypes(edmEntitySet.ElementType).OfType<IEdmEntityType>())
+			foreach (var edmDerivedType in edmModel.FindAllDerivedTypes(edmEntitySet.Type as IEdmEntityType).OfType<IEdmEntityType>())
 			{
 				entityTypes.Add(new EntityTypeInfo(edmModel, edmDerivedType, typeResolver));
 			}

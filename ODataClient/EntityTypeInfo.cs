@@ -11,7 +11,7 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
-using Microsoft.Data.Edm;
+using Microsoft.OData.Edm;
 
 namespace PD.Base.EntityRepository.ODataClient
 {

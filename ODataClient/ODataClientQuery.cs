@@ -1,4 +1,4 @@
-﻿// -----------------------------------------------------------------------
+﻿ // -----------------------------------------------------------------------
 // <copyright file="ODataClientQuery.cs" company="PrecisionDemand">
 // Copyright (c) 2013 PrecisionDemand.  All rights reserved.
 // </copyright>
@@ -7,7 +7,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Data.Services.Client;
+using Microsoft.OData.Client;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Globalization;

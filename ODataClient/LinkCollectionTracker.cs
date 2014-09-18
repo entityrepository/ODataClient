@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using System.Reflection;
 using PD.Base.EntityRepository.Api.Base;
 
 namespace PD.Base.EntityRepository.ODataClient
@@ -104,20 +105,23 @@ namespace PD.Base.EntityRepository.ODataClient
 
 		internal void RevertLinksToUnmodified()
 		{
-			IList listLinkReferences = _collection as IList;
-			if (listLinkReferences == null)
-			{
-				throw new InvalidOperationException("Can't Revert a link collection that doesn't implement IList.");
-			}
-			if (_unmodifiedCollection == null)
-			{
-				throw new InvalidOperationException("Can't Revert because the unmodified links were not captured.");
-			}
+		    MethodInfo clearMethod = _collection.GetType().GetMethod("Clear");
+		    MethodInfo addMethod = _collection.GetType().GetMethod("Add");
 
-			listLinkReferences.Clear();
+		    if (clearMethod == null || addMethod == null)
+		    {
+		        throw new InvalidOperationException(string.Format("Can't Revert a link collection that doesn't implement Clear and Add.  Collection type is '{0}'", _collection.GetType()));
+		    }
+
+            if (_unmodifiedCollection == null) {
+                throw new InvalidOperationException("Can't Revert because the unmodified links were not captured.");
+            }
+
+		    clearMethod.Invoke(_collection, null);
+
 			foreach (object o in _unmodifiedCollection)
 			{
-				listLinkReferences.Add(o);
+			    addMethod.Invoke(_collection, new[] {o});
 			}
 
 			_collectionChanged = false;

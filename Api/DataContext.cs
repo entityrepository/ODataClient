@@ -24,7 +24,6 @@ namespace PD.Base.EntityRepository.Api
 	/// </summary>
 	public abstract class DataContext : IDisposable
 	{
-
 		private readonly IDataContextImpl _dataContextImpl;
 		private readonly Action<DataContext> _initializeAction;
 		private Task _initializeTask;
@@ -351,9 +350,7 @@ namespace PD.Base.EntityRepository.Api
 			if (! queries.Any())
 			{
 				// Log("No types preloaded");
-				Task task = new Task(() => { });
-			    task.Start();
-			    return task;
+				return TaskExtensions.CompletedTask;
 			}
 
 			// Synchronous call for all entities that match the queries

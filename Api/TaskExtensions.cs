@@ -15,6 +15,27 @@ namespace PD.Base.EntityRepository.Api
 	public static class TaskExtensions
 	{
 
+		private static readonly Task s_completedTask;
+
+		static TaskExtensions()
+		{
+			// The shorter version is 
+			//    s_completedTask = Task.FromResult(true);
+			//	- but that doesn't exist in Silverlight.
+			// TaskCompletionSource exists in Silverlight.
+			var taskCompletionSource = new TaskCompletionSource<bool>();
+			taskCompletionSource.SetResult(true);
+			s_completedTask = taskCompletionSource.Task;
+		}
+
+		/// <summary>
+		/// Returns a completed <see cref="Task"/>.
+		/// </summary>
+		public static Task CompletedTask
+		{
+			get { return s_completedTask; }
+		}
+
 		/// <summary>
 		/// Returns a non-<see cref="AggregateException"/> in cases where the <c>AggregateException</c> wraps 
 		/// a single inner exception.

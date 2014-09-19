@@ -7,6 +7,8 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Runtime.Serialization;
 using PD.Base.PortableUtil.Model;
 using Scrum.Model.Base;
 
@@ -179,6 +181,19 @@ namespace Scrum.Model
 		public TimeSpan? TimeEstimate { get; set; }
 
 		public DateTime Created { get; set; }
+
+		/// <summary>
+		/// This fields tests the exclusion of properties from serialization and the server representation.
+		/// </summary>
+		[IgnoreDataMember]
+#if !SILVERLIGHT
+		[NotMapped]
+#endif
+		public DateTime CreatedDate
+		{
+			get { return Created.Date; }
+			set { Created = value.Date + Created.TimeOfDay; }
+		}
 
 		public DateTime? Due { get; set; }
 

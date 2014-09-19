@@ -155,6 +155,7 @@
     <Compile Include="EditRepository.cs" />
     <Compile Include="ODataClientQuery.cs" />
     <Compile Include="ODataClientRequest.cs" />
+    <Compile Include="ODataEntryExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QueryableExtensions.cs" />
     <Compile Include="ReadonlyRepository.cs" />

@@ -23,6 +23,7 @@ using System.Xml;
 using Microsoft.Data.Edm;
 using Microsoft.Data.Edm.Csdl;
 using Microsoft.Data.Edm.Validation;
+using Microsoft.Data.OData;
 using PD.Base.EntityRepository.Api;
 using PD.Base.EntityRepository.Api.Exceptions;
 using PD.Base.PortableUtil.Model;
@@ -161,6 +162,8 @@ namespace PD.Base.EntityRepository.ODataClient
 
 			dataServiceContext = new CustomDataServiceContext(serviceRoot, this);
 
+			dataServiceContext.Configurations.RequestPipeline.OnEntryEnding(EndWriteODataEntry);
+
 			// These events aren't supported when reading/writing JSON
 			//_dataServiceContext.WritingEntity += OnWritingEntity;
 			//_dataServiceContext.ReadingEntity += OnReadingEntity;
@@ -172,6 +175,16 @@ namespace PD.Base.EntityRepository.ODataClient
 				uriBuilder.Path += "/";
 			}
 			baseUriWithSlash = uriBuilder.Uri;
+		}
+
+		/// <summary>
+		/// Provides default handling of JSON properties - we remove properties with [IgnoreDataMember].
+		/// This method is overridable.
+		/// </summary>
+		/// <param name="writingEntryArgs"></param>
+		protected virtual void EndWriteODataEntry(WritingEntryArgs writingEntryArgs)
+		{
+			writingEntryArgs.Entry.RemoveIgnoreDataMemberProperties();
 		}
 
 		/// <summary>

@@ -83,9 +83,12 @@ namespace PD.Base.EntityRepository.ODataClient
 			_requestState = RequestState.Completed;
 			if (operationResponse.Error != null)
 			{
-				_requestState = RequestState.CompletedWithError;
-				Exception = operationResponse.Error;
-			}
+			    if (operationResponse.StatusCode != 404) 
+                {
+                    _requestState = RequestState.CompletedWithError;
+                    Exception = operationResponse.Error;   
+			    }
+			} 
 			else if (operationResponse.StatusCode < 200 || operationResponse.StatusCode > 250)
 			{
 				_requestState = RequestState.CompletedWithError;

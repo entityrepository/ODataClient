@@ -201,39 +201,48 @@ namespace PD.Base.EntityRepository.ODataClient
 		internal override void HandleResponse(ODataClient client, OperationResponse operationResponse)
 		{
 			base.HandleResponse(client, operationResponse);
-			if (base.IsCompletedSuccessfully)
-			{
-				try
-				{
-					IEnumerable<TEntity> enumResults = operationResponse as IEnumerable<TEntity>;
-					if (enumResults == null)
-					{
-						throw new InvalidOperationException("Expected results from " + operationResponse + " to be IEnumerable<" + typeof(TEntity) + ">.");
-					}
+		    if (base.IsCompletedSuccessfully)
+		    {
+		        try
+		        {
+		            IEnumerable<TEntity> enumResults = null;
+		            if (operationResponse.StatusCode == 404)
+		            {
+		                enumResults = new List<TEntity>();
+		            }
+		            else
+		            {
+		                enumResults = operationResponse as IEnumerable<TEntity>;
+		            }
 
-					// Disable change tracking while materializing the results
-					EntityTracker.ChangeTrackingDisabled = true;
-					_results = enumResults.ToArray();
-					EntityTracker.ChangeTrackingDisabled = false;
+		            if (enumResults == null)
+		            {
+		                throw new InvalidOperationException("Expected results from " + operationResponse + " to be IEnumerable<" + typeof(TEntity) + ">.");
+		            }
 
-					// Break up connected entities and have each repository process them
-					DataServiceLinkGraph linkGraph = new DataServiceLinkGraph(client.DataServiceContext, _results.Cast<object>().ToArray());
-					linkGraph.WalkGraph();
-					foreach (object linkedEntity in linkGraph.Entities)
-					{
-						BaseRepository repository;
-						if (client.RepositoriesByType.TryGetValue(linkedEntity.GetType(), out repository))
-						{
-							repository.ProcessQueryResult(linkedEntity);
-						}
-					}
+		            // Disable change tracking while materializing the results
+		            EntityTracker.ChangeTrackingDisabled = true;
+		            _results = enumResults.ToArray();
+		            EntityTracker.ChangeTrackingDisabled = false;
 
-				}
-				catch (Exception ex)
-				{
-					base.Failed(ex);
-				}
-			}
+		            // Break up connected entities and have each repository process them
+		            DataServiceLinkGraph linkGraph = new DataServiceLinkGraph(client.DataServiceContext, _results.Cast<object>().ToArray());
+		            linkGraph.WalkGraph();
+		            foreach (object linkedEntity in linkGraph.Entities)
+		            {
+		                BaseRepository repository;
+		                if (client.RepositoriesByType.TryGetValue(linkedEntity.GetType(), out repository))
+		                {
+		                    repository.ProcessQueryResult(linkedEntity);
+		                }
+		            }
+
+		        }
+		        catch (Exception ex)
+		        {
+		            base.Failed(ex);
+		        }
+		    }
 		}
 
 		#endregion

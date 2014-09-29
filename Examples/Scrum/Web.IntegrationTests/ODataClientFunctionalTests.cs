@@ -12,6 +12,7 @@ using PD.Base.EntityRepository.ODataClient;
 using PD.Base.PortableUtil.Enum;
 using Scrum.Model;
 using Xunit;
+using Xunit.Sdk;
 
 namespace Scrum.Web.IntegrationTests
 {
@@ -417,6 +418,43 @@ namespace Scrum.Web.IntegrationTests
 			Assert.Equal(EntityState.Modified, _client.Projects.GetEntityState(workItem.Project));
 			Assert.Throws<AggregateException>(() => _client.SaveChanges());
 		}
+
+	    [Fact]
+	    public void TestWhereSingleIdNotFound()
+	    {
+	        _client.Clear().Wait(ScrumClient.TestTimeout);
+
+	        var workItemQuery = _client.WorkItems.Where(wi => wi.ID == 1305230952);
+	        _client.InvokeAsync(workItemQuery).Wait(ScrumClient.TestTimeout);
+            Assert.False(workItemQuery.Any());
+	    }
+
+	    [Fact(Skip = "This currently does not work, because the ProjectArea is added before the Project that it references")]
+	    public void TestCreateWithSingleItemLinkToNewObject()
+	    {
+            // Setup
+	        _client.Clear().Wait(ScrumClient.TestTimeout);
+
+            // Create a new project
+	        var project = new Project()
+	                      {
+	                          Key = "TESTPROJECTKEY",
+	                          Name = "Test Project",
+	                          Description = "This is a test project"
+	                      };
+
+            // Create a new ProjectArea
+	        var projectArea = new ProjectArea()
+	                          {
+	                              Project = project,
+                                  Description = "Test project area",
+                                  Name = "Test Project Area"
+	                          };
+
+	        _client.ProjectAreas.Add(projectArea);
+	        Assert.True(_client.SaveChanges().Wait(ScrumClient.TestTimeout));
+
+	    }
 
 		public void TestReferencePropertyValidationForExistingEntities()
 		{

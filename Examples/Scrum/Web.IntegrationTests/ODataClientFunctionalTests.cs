@@ -429,7 +429,7 @@ namespace Scrum.Web.IntegrationTests
             Assert.False(workItemQuery.Any());
 	    }
 
-	    [Fact(Skip = "This currently does not work, because the ProjectArea is added before the Project that it references")]
+	    [Fact]
 	    public void TestCreateWithSingleItemLinkToNewObject()
 	    {
             // Setup

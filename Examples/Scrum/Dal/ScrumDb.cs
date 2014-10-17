@@ -114,6 +114,10 @@ namespace Scrum.Dal
 
 			modelBuilder.Entity<WorkItemTimeLog>().HasRequired(l => l.Worker).WithMany().WillCascadeOnDelete(false);
 
+            // Use Table per Type convention
+		    modelBuilder.Entity<ProjectArea>().ToTable("ProjectAreas");
+            modelBuilder.Entity<ExtendedProjectArea>().ToTable("ExtendedProjectAreas");
+
 			// For the DbEnum subclasses, turn off autoincrement so IDs of 0 (or flags) can work
 			modelBuilder.Entity<Priority>().Property(priority => priority.ID).HasDatabaseGeneratedOption(DatabaseGeneratedOption.None);
 			modelBuilder.Entity<Status>().Property(status => status.ID).HasDatabaseGeneratedOption(DatabaseGeneratedOption.None);

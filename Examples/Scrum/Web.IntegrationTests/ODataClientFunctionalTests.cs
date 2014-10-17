@@ -535,6 +535,43 @@ namespace Scrum.Web.IntegrationTests
 			Assert.True(_client.SaveChanges().Wait(ScrumClient.TestTimeout));
 		}
 
+	    [Fact]
+	    public void TestCreateDerivedType()
+	    {
+            // Setup
+            _client.Clear().Wait(ScrumClient.TestTimeout);
+
+            // Create a new project
+            var project = new Project() {
+                Key = "TESTPROJECTKEY",
+                Name = "Test Project",
+                Description = "This is a test project"
+            };
+
+            // Create a new ExtendedProjectArea
+	        string tag = new Guid().ToString();
+            var workItem = new ExtendedProjectArea 
+            {
+                Project = project,
+                Name = "Test Project Name",
+                Description = "Test project area",
+                Tag = tag
+            };
+
+            _client.ProjectAreas.Add(workItem);
+            Assert.True(_client.SaveChanges().Wait(ScrumClient.TestTimeout));
+
+            // Clear the client, then read the last item from the database
+	        _client.Clear().Wait(ScrumClient.TestTimeout);
+
+	        var projectAreaQuery = _client.ProjectAreas.All;
+	        _client.InvokeAsync(projectAreaQuery).Wait(ScrumClient.TestTimeout);
+
+	        var lastItem = projectAreaQuery.Last();
+            Assert.Equal(typeof(ExtendedProjectArea), lastItem.GetType());
+	        Assert.Equal(tag, ((ExtendedProjectArea) lastItem).Tag);
+	    }
+
 		// TODO tests:
 		// CUD on included objects
 		// Verify client-side validation of [Required] and [StringLength] attributes before SaveChanges() calls the server

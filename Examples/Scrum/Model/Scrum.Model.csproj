@@ -124,6 +124,7 @@
   <ItemGroup>
     <Compile Include="Base\BaseEntity.cs" />
     <Compile Include="Client.cs" />
+    <Compile Include="ExtendedProjectArea.cs" />
     <Compile Include="Priority.cs" />
     <Compile Include="Project.cs" />
     <Compile Include="ProjectArea.cs" />

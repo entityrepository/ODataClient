@@ -35,8 +35,10 @@ namespace Scrum.WebApi
 			                   hybridLifestyle);
 			container.RegisterLazy<ScrumDb>();
 
-			// Required: Register global datamodel metadata
-			container.RegisterSingle<IContainerMetadata<ScrumDb>, DbContextMetadata<ScrumDb>>();
+            // Required: Register global datamodel metadata
+            var metadataRegistration = Lifestyle.Singleton.CreateRegistration<DbContextMetadata<ScrumDb>>(container);
+            container.AddRegistration(typeof(IContainerMetadata<ScrumDb>), metadataRegistration);
+            container.AddRegistration(typeof(IContainerMetadata), metadataRegistration);
 
 			// Query validation settings could be specified here
 			//container.RegisterInstance(new ODataValidationSettings

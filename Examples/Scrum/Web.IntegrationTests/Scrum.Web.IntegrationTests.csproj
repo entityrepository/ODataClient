@@ -46,7 +46,7 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(PackagesDir)\Microsoft.Data.Services.Client.5.6.2\lib\net40\Microsoft.Data.Services.Client.dll</HintPath>
     </Reference>
-    <Reference Include="PD.Base.PortableUtil, Version=1.1.0.6780, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="PD.Base.PortableUtil, Version=1.1.0.7006, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\packages\PD.Base.PortableUtil.1.1.0.7006-debug\lib\portable-net45+sl50\PD.Base.PortableUtil.dll</HintPath>
     </Reference>

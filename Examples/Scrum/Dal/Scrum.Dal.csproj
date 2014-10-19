@@ -107,7 +107,7 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(PackagesDir)\EntityFramework.6.1.1\lib\net45\EntityFramework.SqlServer.dll</HintPath>
     </Reference>
-    <Reference Include="PD.Base.PortableUtil, Version=1.1.0.6780, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="PD.Base.PortableUtil, Version=1.1.0.7006, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\packages\PD.Base.PortableUtil.1.1.0.7006-debug\lib\portable-net45+sl50\PD.Base.PortableUtil.dll</HintPath>
     </Reference>

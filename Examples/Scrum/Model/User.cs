@@ -5,6 +5,8 @@
 // -----------------------------------------------------------------------
 
 using System.ComponentModel.DataAnnotations;
+using System.Runtime.Serialization;
+using PD.Base.PortableUtil.Model;
 using Scrum.Model.Base;
 
 namespace Scrum.Model
@@ -14,7 +16,9 @@ namespace Scrum.Model
 	public class User : BaseEntity<int, User>
 	{
 
-		[Required]
+	    private EntityRef<UserGroup, int?> _group;
+        
+        [Required]
 		[DataType(DataType.EmailAddress)]
 		public string Email { get; set; }
 
@@ -22,5 +26,17 @@ namespace Scrum.Model
 		[StringLength(40, MinimumLength = 3)]
 		public string UserName { get; set; }
 
+	    public UserGroup Group
+	    {
+            get { return _group.Entity; }
+            set { _group.Entity = value; }
+	    }
+
+        [IgnoreDataMember]
+	    public int? GroupId
+	    {
+            get { return _group.ForeignKey; }
+            set { _group.ForeignKey = value; }
+	    }
 	}
 }

@@ -77,6 +77,7 @@ namespace Scrum.Dal
 		public DbSet<ProjectVersion> ProjectVersions { get; set; }
 		public DbSet<Sprint> Sprints { get; set; }
 		public DbSet<User> Users { get; set; }
+        public DbSet<UserGroup> UserGroups { get; set; }
 		public DbSet<WorkItem> WorkItems { get; set; }
 		public DbSet<WorkItemMessage> WorkItemMessages { get; set; }
 		public DbSet<WorkItemPropertyChange> WorkItemPropertyChanges { get; set; }

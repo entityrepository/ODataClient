@@ -41,6 +41,7 @@ namespace Scrum.Web.IntegrationTests
 		public IEditRepository<WorkItemPropertyChange> WorkItemPropertyChanges { get; private set; }
 		public IEditRepository<WorkItemTimeLog> WorkItemTimeLog { get; private set; }
 		public IEditRepository<User> Users { get; private set; }
+        public IEditRepository<UserGroup> UserGroups { get; private set; } 
 
 		public IReadOnlyRepository<Priority> Priority { get; private set; }
 		public IReadOnlyRepository<Status> Status { get; private set; }

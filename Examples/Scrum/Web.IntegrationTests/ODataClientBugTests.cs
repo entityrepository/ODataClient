@@ -5,6 +5,7 @@
 // -----------------------------------------------------------------------
 
 using System;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using PD.Base.EntityRepository.ODataClient;
@@ -28,6 +29,23 @@ namespace Scrum.Web.IntegrationTests
 		public void Dispose()
 		{
 			_client.Dispose();
+		}
+
+		/// <summary>
+		/// If a model object implements <see cref="INotifyPropertyChanged"/>, EntityRepository.ODataClient relies on it working.
+		/// </summary>
+		[Fact]
+		public void ModelINotifyPropertyChangedWorks()
+		{
+			var user = new User();
+			string changedPropertyName = null;
+			user.PropertyChanged += (sender, args) => changedPropertyName = args.PropertyName;
+
+			user.Email = "joe@gmail.com";
+			Assert.Equal("Email", changedPropertyName);
+
+			user.UserName = "joe";
+			Assert.Equal("UserName", changedPropertyName);
 		}
 
 		/// <summary>

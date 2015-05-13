@@ -271,10 +271,10 @@ namespace PD.Base.EntityRepository.Api
 		/// <summary>
 		/// Reports all changes to the caller.  Each of the optional delegates are called once for each change.
 		/// </summary>
-		/// <param name="onChangedEntity">Called for each changed entity.</param>
-		/// <param name="onChangedLink">Called for each changed link.</param>
+		/// <param name="onChangedEntity">Optional - if non-null, this action is called for each changed entity.</param>
+		/// <param name="onChangedLink">Optional - if non-null, this action is called for each changed link.</param>
 		/// <returns>The total number of changes.</returns>
-		public int ReportChanges(Action<EntityState, object> onChangedEntity, Action<EntityState, object, string, object> onChangedLink)
+		public int ReportChanges(Action<EntityState, object> onChangedEntity = null, Action<EntityState, object, string, object> onChangedLink = null)
 		{
 			EnsureInitializationCompleted();
 			return _dataContextImpl.ReportChanges(onChangedEntity, onChangedLink);

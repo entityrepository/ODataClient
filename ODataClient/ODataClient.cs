@@ -777,7 +777,6 @@ namespace PD.Base.EntityRepository.ODataClient
 
 				countChanges += _dataServiceContext.Links.Count(linkDescriptor => linkDescriptor.State != EntityStates.Unchanged);
 				return countChanges;
-
 			}
 		}
 

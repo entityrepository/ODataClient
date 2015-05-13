@@ -145,7 +145,11 @@ namespace PD.Base.EntityRepository.ODataClient
 						{
 							// If o is already being tracked, this won't do anything.
 							// This is necessary if the collection doesn't implement INotifyCollectionChanged, and o is new.
-							oDataClient.AddEntityGraph(o, null, _parentEntityTracker.Entity, _sourcePropertyName);
+							object trackedEntity = oDataClient.AddEntityGraph(o, null, _parentEntityTracker.Entity, _sourcePropertyName);
+							// Usually o === trackedEntity
+
+							// Add the link
+							oDataClient.DataServiceContext.AddLink(_parentEntityTracker.Entity, _sourcePropertyName, trackedEntity);
 						}
 					}
 				}

@@ -314,14 +314,17 @@ namespace Scrum.Web.IntegrationTests
             workItem.Description += Environment.NewLine + "Please add a better bug description";
             workItem.Due = DateTime.Now.AddDays(5);
             Assert.Equal(EntityState.Modified, _client.WorkItems.GetEntityState(workItem));
-            Assert.True(_client.SaveChanges().Wait(ScrumClient.TestTimeout));
+			Assert.Equal(1, _client.ReportChanges(null, null)); // 1 entity
+			Assert.True(_client.SaveChanges().Wait(ScrumClient.TestTimeout));
             Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
 
             // Adds a link to an existing item
             workItem.Subscribers.Add(gailUser);
             Assert.Equal(EntityState.Modified, _client.WorkItems.GetEntityState(workItem));
-            Assert.True(_client.SaveChanges().Wait(ScrumClient.TestTimeout));
+			Assert.Equal(1, _client.ReportChanges(null, null)); // 1 link
+			Assert.True(_client.SaveChanges().Wait(ScrumClient.TestTimeout));
             Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
+			Assert.Equal(0, _client.ReportChanges(null, null));
 
             // Verify adding child objects works
             WorkItemMessage message2 = new WorkItemMessage(workItem, gailUser)
@@ -331,7 +334,7 @@ namespace Scrum.Web.IntegrationTests
                                        };
             workItem.Messages.Add(message2);
             Assert.Equal(EntityState.Modified, _client.WorkItems.GetEntityState(workItem));
-            // Since WorkItem.Messages implement INotifyCollectionchanged, message2 should be added to the repository as soon as it's added to workItem.Messages,
+            // Since WorkItem.Messages implement INotifyCollectionChanged, message2 should be added to the repository as soon as it's added to workItem.Messages,
             // since workItem is being tracked:
             Assert.Equal(EntityState.Added, _client.WorkItemMessages.GetEntityState(message2));
             Assert.True(_client.SaveChanges().Wait(ScrumClient.TestTimeout));

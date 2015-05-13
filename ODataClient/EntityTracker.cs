@@ -67,6 +67,11 @@ namespace PD.Base.EntityRepository.ODataClient
 			_entity = entity;
 			_entityTypeInfo = oDataClient.GetEntityTypeInfoFor(entity.GetType());
 
+			if (_entityTypeInfo == null)
+			{
+				throw new ArgumentException("Entity type " + entity.GetType() + " is unknown in the OData Client.");
+			}
+
 			_linkCollectionTrackers = new LinkCollectionTracker[_entityTypeInfo.CollectionProperties.Length];
 			for (int i = 0; i < _entityTypeInfo.CollectionProperties.Length; ++i)
 			{

@@ -148,8 +148,11 @@ namespace PD.Base.EntityRepository.ODataClient
 							object trackedEntity = oDataClient.AddEntityGraph(o, null, _parentEntityTracker.Entity, _sourcePropertyName);
 							// Usually o === trackedEntity
 
-							// Add the link
-							oDataClient.DataServiceContext.AddLink(_parentEntityTracker.Entity, _sourcePropertyName, trackedEntity);
+							// Add the link if it wasn't added above
+							if (null == oDataClient.DataServiceContext.GetLinkDescriptor(_parentEntityTracker.Entity, _sourcePropertyName, o))
+							{
+								oDataClient.DataServiceContext.AddLink(_parentEntityTracker.Entity, _sourcePropertyName, trackedEntity);
+							}
 						}
 					}
 				}

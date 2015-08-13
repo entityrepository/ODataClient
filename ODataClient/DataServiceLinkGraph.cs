@@ -45,6 +45,7 @@ namespace PD.Base.EntityRepository.ODataClient
 		{
 			_entities.Clear();
 			_links.Clear();
+			var linkMap = _dataServiceContext.Links.ToLookup(link => link.Source, link => link, new EntityEqualityComparer());
 
 			Queue<object> frontier = new Queue<object>(_seedEntities);
 			while (frontier.Count > 0)
@@ -56,7 +57,7 @@ namespace PD.Base.EntityRepository.ODataClient
 					continue;
 				}
 
-				var entitysLinks = _dataServiceContext.Links.Where(link => ReferenceEquals(link.Source, entity)).ToList();
+				var entitysLinks = linkMap[entity];
 				_links.UnionWith(entitysLinks);
 				_entities.Add(entity);
 				foreach (object relatedEntity in entitysLinks.Select(link => link.Target))
@@ -82,5 +83,19 @@ namespace PD.Base.EntityRepository.ODataClient
 			get { return _links; }
 		}
 
+	}
+
+
+	class EntityEqualityComparer : EqualityComparer<object>
+	{
+		public override bool Equals(object x, object y)
+		{
+			return ReferenceEquals(x, y);
+		}
+
+		public override int GetHashCode(object obj)
+		{
+			return obj.GetHashCode();
+		}
 	}
 }

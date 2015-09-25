@@ -30,9 +30,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="PD.Base.PortableUtil, Version=1.1.0.7006, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\packages\PD.Base.PortableUtil.1.1.0.7006-debug\lib\portable-net45+sl50\PD.Base.PortableUtil.dll</HintPath>
+    <Reference Include="PD.Base.PortableUtil, Version=1.2.0.10736, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\PD.Base.PortableUtil.1.2.0.10736-beta\lib\portable-net45+sl50\PD.Base.PortableUtil.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -53,15 +53,15 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Api\Base.EntityRepository.Api.csproj">
+    <ProjectReference Include="..\..\..\src\Api\Base.EntityRepository.Api.csproj">
       <Project>{ebfb91ec-9ace-4268-aa11-763be24b0373}</Project>
       <Name>Base.EntityRepository.Api</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\ODataClient\Base.EntityRepository.ODataClient.csproj">
+    <ProjectReference Include="..\..\..\src\ODataClient\Base.EntityRepository.ODataClient.csproj">
       <Project>{81406ccc-0242-4009-8be5-96e7a80f6922}</Project>
       <Name>Base.EntityRepository.ODataClient</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Model\Simple.Model.csproj">
+    <ProjectReference Include="..\..\..\Examples\Simple\Model\Simple.Model.csproj">
       <Project>{0946CF36-3C2A-495D-AA6B-5C8C5AF5521E}</Project>
       <Name>Simple.Model</Name>
     </ProjectReference>

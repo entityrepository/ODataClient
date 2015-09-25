@@ -31,9 +31,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="PD.Base.PortableUtil, Version=1.1.0.7006, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\packages\PD.Base.PortableUtil.1.1.0.7006-debug\lib\portable-net45+sl50\PD.Base.PortableUtil.dll</HintPath>
+    <Reference Include="PD.Base.PortableUtil, Version=1.2.0.10736, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\PD.Base.PortableUtil.1.2.0.10736-beta\lib\portable-net45+sl50\PD.Base.PortableUtil.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="PropertyChanged, Version=1.48.4.0, Culture=neutral, PublicKeyToken=ee3ee20bcf148ddd, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -54,9 +54,8 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(MSBuildExtensionsPath)\Adap\Common.Targets" />
-  <Import Project="$(MSBuildExtensionsPath)\Adap\Fody\Fody.targets" />
   <!-- <Import Project="$(PackagesDir)\Fody.1.24.0\build\Fody.targets" /> -->
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
   </Target>

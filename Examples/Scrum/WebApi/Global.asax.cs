@@ -25,7 +25,8 @@ namespace Scrum.WebApi
 			//MvcRouteConfig.RegisterRoutes(RouteTable.Routes);
 
 			// DI config
-			var container = new Container(new ContainerOptions() { AllowOverridingRegistrations = true });
+			var container = new Container();
+			container.Options.AllowOverridingRegistrations = false;
 			container.RegisterModules(new ODataServiceModule(), new AppModule());
 
 			// Web API config

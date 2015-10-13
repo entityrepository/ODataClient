@@ -230,6 +230,21 @@ namespace EntityRepository.ODataClient
 
 		#endregion
 
+        /// <summary>
+        /// Supply an action to be applied to any entity of type <c>TEntity</c> when it is loaded from the server.
+        /// </summary>
+        /// <typeparam name="TEntity">The entity type</typeparam>
+        /// <param name="loadAction">The action to perform.</param>
+        /// <returns>This object.</returns>
+        /// <remarks>
+        /// Useful for implementing specialised initialisers (such as an <c>IFreezable</c> interface).
+        /// </remarks>
+	    public ODataClient WithOnLoadAction<TEntity>(Action<TEntity> loadAction)
+	    {
+	        _onLoadTypeActions[typeof(TEntity)] = loadAction;
+            return this;
+	    }
+
 		/// <inheritdoc />
 		public IEditRepository<TEntity> Edit<TEntity>(string entitySetName) where TEntity : class
 		{

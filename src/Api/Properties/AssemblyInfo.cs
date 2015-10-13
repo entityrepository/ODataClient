@@ -15,7 +15,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyDescription("API for CRUD operations on domain model objects.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("PrecisionDemand")]
-[assembly: AssemblyProduct("PD.Base.EntityRepository")]
+[assembly: AssemblyProduct("EntityRepository")]
 [assembly: AssemblyCopyright("Copyright © PrecisionDemand 2013")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

@@ -15,7 +15,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyDescription("OData client that implements the EntityRepository API - providing access over an OData web service.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("PrecisionDemand")]
-[assembly: AssemblyProduct("PD.Base.EntityRepository")]
+[assembly: AssemblyProduct("EntityRepository")]
 [assembly: AssemblyCopyright("Copyright © PrecisionDemand 2013")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

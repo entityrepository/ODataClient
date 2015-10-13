@@ -10,9 +10,9 @@ using System.Collections.Generic;
 using System.Data.Services.Client;
 using System.Linq;
 using System.Linq.Expressions;
-using PD.Base.EntityRepository.Api;
+using EntityRepository.Api;
 
-namespace PD.Base.EntityRepository.ODataClient
+namespace EntityRepository.ODataClient
 {
 	/// <summary>
 	/// Common generically-typed repository functionality between edit and readonly repositories.
@@ -24,7 +24,12 @@ namespace PD.Base.EntityRepository.ODataClient
 		// The query that returns all items in the repository
 		private readonly ODataClientQuery<TEntity> _baseQuery;
 
-		internal BaseRepository(ODataClient odataClient, EntitySetInfo entitySetInfo)
+        /// <summary>
+        /// Creates a base repo accessor
+        /// </summary>
+        /// <param name="odataClient">The client</param>
+        /// <param name="entitySetInfo">Type descriptions</param>
+        internal BaseRepository(ODataClient odataClient, EntitySetInfo entitySetInfo)
 			: base(odataClient, entitySetInfo)
 		{
 			_baseQuery = new ODataClientQuery<TEntity>(odataClient.DataServiceContext, this);

@@ -4,7 +4,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace PD.Base.EntityRepository.Api
+namespace EntityRepository.Api
 {
 	/// <summary>
 	/// A repository that provides read-only access to entity objects of type <typeparamref name="TEntity"/>.

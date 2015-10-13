@@ -4,6 +4,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
+// XXX: excluded from project - to move to scrum model.
 using System;
 using System.Collections;
 using System.Threading.Tasks;

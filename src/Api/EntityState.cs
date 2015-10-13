@@ -4,7 +4,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace PD.Base.EntityRepository.Api
+namespace EntityRepository.Api
 {
 	/// <summary>
 	/// Tracks the state of an entity within an <see cref="IEditRepository{TEntity}"/>.

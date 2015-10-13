@@ -21,7 +21,6 @@
 		<!-- Explicitly specify which assemblys are referenced when this project is referenced - this prevents CodeContracts files from being referenced. -->
 		<references>
 			<reference file="$id$.dll" />
-			<reference file="$id$.Silverlight.dll" />
 		</references>
 		
   </metadata>
@@ -31,11 +30,6 @@
 		<file src="$TargetDir$$id$.pdb" target="lib\net45" />
 		<!-- Code-contracts reference assembly -->
 		<file src="$TargetDir$\CodeContracts\$id$.Contracts.*" target="lib\net45\CodeContracts" />
-
-		<file src="$TargetDir$$id$.Silverlight.dll" target="lib\sl50" />
-		<file src="$TargetDir$$id$.Silverlight.pdb" target="lib\sl50" />
-		<file src="$TargetDir$$id$.Silverlight.xml" target="lib\sl50" />
-		<file src="$TargetDir$\CodeContracts\$id$.Silverlight.Contracts.*" target="lib\sl50\CodeContracts" />
 	</files>
 
 </package>

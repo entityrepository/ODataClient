@@ -9,7 +9,7 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 using Microsoft.Data.Edm;
 
-namespace PD.Base.EntityRepository.ODataClient
+namespace EntityRepository.ODataClient
 {
 	/// <summary>
 	/// Holds metadata for an Entity Set.

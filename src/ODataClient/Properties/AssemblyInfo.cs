@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 
-[assembly: AssemblyTitle("PD.Base.EntityRepository.ODataClient")]
+[assembly: AssemblyTitle("EntityRepository.ODataClient")]
 [assembly: AssemblyDescription("OData client that implements the EntityRepository API - providing access over an OData web service.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("PrecisionDemand")]

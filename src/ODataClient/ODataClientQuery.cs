@@ -14,9 +14,9 @@ using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using PD.Base.EntityRepository.Api;
+using EntityRepository.Api;
 
-namespace PD.Base.EntityRepository.ODataClient
+namespace EntityRepository.ODataClient
 {
 	/// <summary>
 	/// Provides shared functionality for <see cref="EditRepository{TEntity}"/> and <see cref="ReadOnlyRepository{TEntity}"/>. 

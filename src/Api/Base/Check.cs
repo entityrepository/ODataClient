@@ -7,7 +7,7 @@
 using System;
 using System.Diagnostics.Contracts;
 
-namespace PD.Base.EntityRepository.Api.Base
+namespace EntityRepository.Api.Base
 {
 	/// <summary>
 	/// Parameter validation functions.

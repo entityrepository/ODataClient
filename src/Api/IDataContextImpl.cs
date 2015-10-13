@@ -10,7 +10,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace PD.Base.EntityRepository.Api
+namespace EntityRepository.Api
 {
 #pragma warning disable 1574
 	/// <summary>
@@ -93,7 +93,7 @@ namespace PD.Base.EntityRepository.Api
 		/// Upon completion, all previously modified entities will be updated to their current state, and <see cref="IEditRepository{TEntity}.GetEntityState"/> for each
 		/// object will return <see cref="EntityState.Unmodified"/>.
 		/// 
-		/// If an entity that is about to be saved implements <c>IValidatable</c>, <c>IValidatable.Validate</c> will be called before the entity is saved.
+		/// If an entity that is about to be saved implements <c>IValidatableObject</c>, <c>IValidatableObject.Validate</c> will be called before the entity is saved.
 		/// 
 		/// TODO: Add support for per-entity-change exceptions in the case of failures.
 		/// </remarks>

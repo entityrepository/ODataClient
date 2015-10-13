@@ -6,7 +6,7 @@
 
 using System;
 
-namespace PD.Base.EntityRepository.Api
+namespace EntityRepository.Api
 {
 #pragma warning disable 0419
 	/// <summary>

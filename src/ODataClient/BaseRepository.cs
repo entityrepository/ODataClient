@@ -8,9 +8,9 @@ using System;
 using System.Collections.Generic;
 using System.Data.Services.Client;
 using System.Linq;
-using PD.Base.EntityRepository.Api;
+using EntityRepository.Api;
 
-namespace PD.Base.EntityRepository.ODataClient
+namespace EntityRepository.ODataClient
 {
 
 	/// <summary>

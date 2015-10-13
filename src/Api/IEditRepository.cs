@@ -11,7 +11,7 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace PD.Base.EntityRepository.Api
+namespace EntityRepository.Api
 {
 	/// <summary>
 	/// An <c>IEditRepository</c> represents a queryable and editable collection of all persisted instances of the specified <typeparamref name="TEntity"/> type.  

@@ -13,7 +13,7 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using Microsoft.Data.Edm;
 
-namespace PD.Base.EntityRepository.ODataClient
+namespace EntityRepository.ODataClient
 {
 
 	/// <summary>

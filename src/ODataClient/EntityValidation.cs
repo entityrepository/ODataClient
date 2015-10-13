@@ -4,7 +4,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-using Microsoft.Data.Edm.Validation;
+using System.ComponentModel.DataAnnotations;
 
 namespace EntityRepository.ODataClient
 {

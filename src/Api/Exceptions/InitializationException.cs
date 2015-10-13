@@ -6,7 +6,7 @@
 
 using System;
 
-namespace PD.Base.EntityRepository.Api.Exceptions
+namespace EntityRepository.Api.Exceptions
 {
 	/// <summary>
 	/// Thrown when the entity repository implementation fails to initialize.

@@ -14,9 +14,8 @@ using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection;
-using PD.Base.PortableUtil.Model;
 
-namespace PD.Base.EntityRepository.ODataClient
+namespace EntityRepository.ODataClient
 {
 	/// <summary>
 	/// Tracks changes to an entity within an <see cref="EditRepository{TEntity}"/>.

@@ -4,13 +4,13 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using PD.Base.EntityRepository.Api;
-using PD.Base.PortableUtil.Model;
+using EntityRepository.Api;
 
-namespace PD.Base.EntityRepository.ODataClient
+namespace EntityRepository.ODataClient
 {
 
 	/// <summary>
@@ -22,11 +22,19 @@ namespace PD.Base.EntityRepository.ODataClient
 	{
 
 		private readonly Dictionary<TEntity, TEntity> _localCache;
+        private Action<TEntity> _onLoadObjectFromRepository;
 
-		internal ReadOnlyRepository(ODataClient odataClient, EntitySetInfo entitySetInfo)
+        /// <summary>
+        /// Create a readonly repository.
+        /// </summary>
+        /// <param name="odataClient">The client</param>
+        /// <param name="entitySetInfo">The entity set</param>
+        /// <param name="onLoadObjectFromRepository">Useful to implement, eg, IFreezable.  May be null.</param>
+        internal ReadOnlyRepository(ODataClient odataClient, EntitySetInfo entitySetInfo, Action<TEntity> onLoadObjectFromRepository)
 			: base(odataClient, entitySetInfo)
 		{
 			_localCache = new Dictionary<TEntity, TEntity>();
+            _onLoadObjectFromRepository = onLoadObjectFromRepository;
 		}
 
 		#region BaseRepository<TEntity>
@@ -38,10 +46,9 @@ namespace PD.Base.EntityRepository.ODataClient
 
 		internal override TEntity ProcessQueryResult(TEntity entity)
 		{
-			IFreezable freezable = entity as IFreezable;
-			if (freezable != null)
+			if (_onLoadObjectFromRepository != null)
 			{
-				freezable.Freeze();
+                _onLoadObjectFromRepository(entity);
 			}
 
 			return AddToLocalCache(entity, EntityState.Unmodified);

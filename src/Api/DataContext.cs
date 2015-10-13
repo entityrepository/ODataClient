@@ -13,9 +13,9 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
-using PD.Base.EntityRepository.Api.Exceptions;
+using EntityRepository.Api.Exceptions;
 
-namespace PD.Base.EntityRepository.Api
+namespace EntityRepository.Api
 {
 	/// <summary>
 	/// Base class for implementation-independent datacontext definition.  Subclasses of <c>DataContext</c> can be initialized with any
@@ -288,7 +288,7 @@ namespace PD.Base.EntityRepository.Api
 		/// Upon completion, all previously modified entities will be updated to their current state, and <see cref="IEditRepository{TEntity}.GetEntityState"/> for each
 		/// object will return <see cref="EntityState.Unmodified"/>.
 		/// 
-		/// If an entity that is about to be saved implements <c>IValidatable</c>, <c>IValidatable.Validate</c> will be called before the entity is saved.
+		/// If an entity that is about to be saved implements <c>IValidatableObject</c>, <c>IValidatableObject.Validate</c> will be called before the entity is saved.
 		/// </remarks>
 		public Task SaveChanges()
 		{

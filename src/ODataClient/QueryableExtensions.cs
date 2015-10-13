@@ -13,7 +13,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 
-namespace PD.Base.EntityRepository.ODataClient
+namespace EntityRepository.ODataClient
 {
 	/// <summary>
 	/// Extension methods for <see cref="IQueryable"/>.

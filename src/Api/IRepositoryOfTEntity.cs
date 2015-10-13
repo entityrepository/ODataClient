@@ -11,7 +11,7 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace PD.Base.EntityRepository.Api
+namespace EntityRepository.Api
 {
 	/// <summary>
 	/// Generic repository base interface, providing shared members between <see cref="IEditRepository{TEntity}"/> and

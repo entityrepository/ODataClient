@@ -7,7 +7,7 @@
 using System;
 using System.Threading.Tasks;
 
-namespace PD.Base.EntityRepository.Api
+namespace EntityRepository.Api
 {
 	/// <summary>
 	/// Static class providing extension methods to Task Processing Library classes.

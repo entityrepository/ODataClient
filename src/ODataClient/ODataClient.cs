@@ -24,12 +24,11 @@ using Microsoft.Data.Edm;
 using Microsoft.Data.Edm.Csdl;
 using Microsoft.Data.Edm.Validation;
 using Microsoft.Data.OData;
-using PD.Base.EntityRepository.Api;
-using PD.Base.EntityRepository.Api.Exceptions;
-using PD.Base.PortableUtil.Model;
-using TaskExtensions = PD.Base.EntityRepository.Api.TaskExtensions;
+using EntityRepository.Api;
+using EntityRepository.Api.Exceptions;
+using TaskExtensions = EntityRepository.Api.TaskExtensions;
 
-namespace PD.Base.EntityRepository.ODataClient
+namespace EntityRepository.ODataClient
 {
 	/// <summary>
 	/// An <see cref="IDataContextImpl"/> implementation that wraps a WCF Data Services client.
@@ -95,6 +94,11 @@ namespace PD.Base.EntityRepository.ODataClient
 		/// Map of entity type to repository - not modified after initialization.  This ensures that only a single repository is used per type.
 		/// </summary>
 		private readonly Dictionary<Type, BaseRepository> _repositoriesByType = new Dictionary<Type, BaseRepository>();
+
+        /// <summary>
+        /// Action to apply to objects as they are loaded.
+        /// </summary>
+	    private readonly Dictionary<Type, object> _onLoadTypeActions = new Dictionary<Type, object>();
 
 		/// <summary>
 		/// Task tracking asynchronous initialization.
@@ -260,7 +264,14 @@ namespace PD.Base.EntityRepository.ODataClient
 					throw new InvalidOperationException(string.Format("EntitySet '{0}' is type {1} ; not {2}.", entitySetName, entitySetInfo.ElementType.EntityType, entityType));
 				}
 
-				EditRepository<TEntity> editRepository = new EditRepository<TEntity>(this, entitySetInfo);
+			    object loadAction;
+                Action<TEntity> typedLoadAction = null;
+                if (_onLoadTypeActions.TryGetValue(typeof(TEntity), out loadAction))
+			    {
+			        typedLoadAction = loadAction as Action<TEntity>;
+			    }
+
+				EditRepository<TEntity> editRepository = new EditRepository<TEntity>(this, entitySetInfo, typedLoadAction);
 				_editRepositories.Add(entitySetName, editRepository);
 				foreach (Type type in editRepository.EntityTypes)
 				{
@@ -304,7 +315,14 @@ namespace PD.Base.EntityRepository.ODataClient
 					throw new InvalidOperationException(string.Format("EntitySet '{0}' is type {1} ; not {2}.", entitySetName, entitySetInfo.ElementType.EntityType, entityType));
 				}
 
-				ReadOnlyRepository<TEntity> readOnlyRepository = new ReadOnlyRepository<TEntity>(this, entitySetInfo);
+			    object loadAction;
+                Action<TEntity> typedLoadAction = null;
+                if (_onLoadTypeActions.TryGetValue(typeof(TEntity), out loadAction))
+			    {
+			        typedLoadAction = loadAction as Action<TEntity>;
+			    }
+
+				ReadOnlyRepository<TEntity> readOnlyRepository = new ReadOnlyRepository<TEntity>(this, entitySetInfo, typedLoadAction);
 				_readOnlyRepositories.Add(entitySetName, readOnlyRepository);
 				foreach (Type type in readOnlyRepository.EntityTypes)
 				{
@@ -753,7 +771,7 @@ namespace PD.Base.EntityRepository.ODataClient
 						}
 
 						// Allow the entity to validate itself, Validate attributes, but don't require [Required] when the full object graph isn't loaded
-						IValidatable validatable = entity as IValidatable;
+						IValidatableObject validatable = entity as IValidatableObject;
 						if (validatable != null)
 						{
 							var validationResults = validatable.Validate(validationContext);

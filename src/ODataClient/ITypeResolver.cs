@@ -6,7 +6,7 @@
 
 using System;
 
-namespace PD.Base.EntityRepository.ODataClient
+namespace EntityRepository.ODataClient
 {
 	internal interface ITypeResolver
 	{

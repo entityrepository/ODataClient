@@ -11,9 +11,9 @@ using System.Collections.Specialized;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection;
-using PD.Base.EntityRepository.Api.Base;
+using EntityRepository.Api.Base;
 
-namespace PD.Base.EntityRepository.ODataClient
+namespace EntityRepository.ODataClient
 {
 
 	/// <summary>

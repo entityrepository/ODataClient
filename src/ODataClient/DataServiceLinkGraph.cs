@@ -10,7 +10,7 @@ using System.Data.Services.Client;
 using System.Diagnostics.Contracts;
 using System.Linq;
 
-namespace PD.Base.EntityRepository.ODataClient
+namespace EntityRepository.ODataClient
 {
 	/// <summary>
 	/// Implements tracing a link graph starting from a collection of entities, following all links from those entities held in a <see cref="DataServiceContext"/>.

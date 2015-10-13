@@ -6,9 +6,9 @@
 
 using System;
 using System.Data.Services.Client;
-using PD.Base.EntityRepository.Api;
+using EntityRepository.Api;
 
-namespace PD.Base.EntityRepository.ODataClient
+namespace EntityRepository.ODataClient
 {
 	/// <summary>
 	/// Base class for everything that executes an OData request, or part of a batch request.

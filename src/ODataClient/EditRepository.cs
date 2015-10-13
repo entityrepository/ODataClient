@@ -9,9 +9,9 @@ using System.Collections.Generic;
 using System.Data.Services.Client;
 using System.Diagnostics;
 using System.Linq;
-using PD.Base.EntityRepository.Api;
+using EntityRepository.Api;
 
-namespace PD.Base.EntityRepository.ODataClient
+namespace EntityRepository.ODataClient
 {
 	/// <summary>
 	/// The <see cref="IEditRepository{TEntity}"/> implementation for <see cref="ODataClient"/>.
@@ -22,10 +22,13 @@ namespace PD.Base.EntityRepository.ODataClient
 	{
 
 		private readonly Dictionary<TEntity, EntityTracker> _entityTrackers = new Dictionary<TEntity, EntityTracker>();
+	    private Action<TEntity> _onLoadObjectFromRepository;
 
-		internal EditRepository(ODataClient odataClient, EntitySetInfo entitySetInfo)
-			: base(odataClient, entitySetInfo)
-		{}
+	    internal EditRepository(ODataClient odataClient, EntitySetInfo entitySetInfo, Action<TEntity> onLoadObjectFromRepository)
+	        : base(odataClient, entitySetInfo)
+	    {
+	        _onLoadObjectFromRepository = onLoadObjectFromRepository;
+	    }
 
 		#region BaseRepository<TEntity>
 
@@ -36,6 +39,11 @@ namespace PD.Base.EntityRepository.ODataClient
 
 		internal override TEntity ProcessQueryResult(TEntity entity)
 		{
+		    if (_onLoadObjectFromRepository != null)
+		    {
+		        _onLoadObjectFromRepository(entity);
+		    }
+
 			return AddToLocalCache(entity, EntityState.Unmodified);
 		}
 

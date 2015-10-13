@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 
-[assembly: AssemblyTitle("PD.Base.EntityRepository.Api")]
+[assembly: AssemblyTitle("EntityRepository.Api")]
 [assembly: AssemblyDescription("API for CRUD operations on domain model objects.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("PrecisionDemand")]

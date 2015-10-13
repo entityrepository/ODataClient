@@ -6,7 +6,7 @@
 
 using System.Linq;
 
-namespace PD.Base.EntityRepository.Api
+namespace EntityRepository.Api
 {
 	/// <summary>
 	/// A query request.

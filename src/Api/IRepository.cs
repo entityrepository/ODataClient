@@ -8,9 +8,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
-using PD.Base.EntityRepository.Api.Base;
+using EntityRepository.Api.Base;
 
-namespace PD.Base.EntityRepository.Api
+namespace EntityRepository.Api
 {
 	/// <summary>
 	/// Exposes common functionality between edit and read-only repositories.  This class is not generic so that all

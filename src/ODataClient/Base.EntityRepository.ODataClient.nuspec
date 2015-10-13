@@ -25,7 +25,7 @@
 		
   </metadata>
 
-	<!-- This project contains a .NET 4.5 DLL, and a Silverlight DLL, along with XML docs. -->
+	<!-- This project contains a .NET 4.5 DLL along with XML docs. -->
 	<files>
 		<file src="$TargetDir$$id$.pdb" target="lib\net45" />
 		<!-- Code-contracts reference assembly -->

@@ -12,7 +12,7 @@
 
 		<iconUrl>http://builder/img/PrecisionDemand_Logo_64x64.png</iconUrl>
 		<requireLicenseAcceptance>false</requireLicenseAcceptance>
-		<copyright>Copyright © 2011-2013</copyright>
+		<copyright>Copyright © 2011-2015</copyright>
 		
 		<!-- TODO: Complete these when appropriate
 		<projectUrl>http://PROJECT_URL_HERE_OR_DELETE_THIS_LINE</projectUrl>
@@ -21,12 +21,11 @@
 		<!-- Explicitly specify which assemblys are referenced when this project is referenced - this prevents CodeContracts files from being referenced. -->
 		<references>
 			<reference file="$id$.dll" />
-			<reference file="$id$.Silverlight.dll" />
 		</references>
 		
 	</metadata>
 
-	<!-- This project contains a .NET 4.5 DLL, and a Silverlight DLL, along with XML docs. -->
+	<!-- This project contains a .NET 4.5 DLL along with XML docs. -->
 	<files>
 		<file src="$TargetDir$$id$.pdb" target="lib\net45" />
 		<!-- Code-contracts reference assembly -->

@@ -7,7 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using PD.Base.EntityRepository.ODataClient;
+using EntityRepository.ODataClient;
 using Simple.Model;
 using Xunit;
 
@@ -62,9 +62,9 @@ namespace Simple.IntegrationTests
 			//   at System.Linq.Enumerable.<CastIterator>d__b1`1.MoveNext()
 			//   at System.Linq.Buffer`1..ctor(IEnumerable`1 source)
 			//   at System.Linq.Enumerable.ToArray[TSource](IEnumerable`1 source)
-			//   at PD.Base.EntityRepository.ODataClient.EditRepository`1.ProcessQueryResults(IEnumerable`1 entities) in c:\src\code\Base\EntityRepository\trunk\ODataClient\EditRepository.cs:line 45
-			//   at PD.Base.EntityRepository.ODataClient.ODataClient.ProcessQueryResults[TEntity](IEnumerable`1 results) in c:\src\code\Base\EntityRepository\trunk\ODataClient\ODataClient.cs:line 619
-			//   at PD.Base.EntityRepository.ODataClient.ODataClientQuery`1.HandleResponse(ODataClient client, OperationResponse operationResponse) in c:\src\code\Base\EntityRepository\trunk\ODataClient\ODataClientQuery.cs:line 209
+			//   at EntityRepository.ODataClient.EditRepository`1.ProcessQueryResults(IEnumerable`1 entities) in c:\src\code\Base\EntityRepository\trunk\ODataClient\EditRepository.cs:line 45
+			//   at EntityRepository.ODataClient.ODataClient.ProcessQueryResults[TEntity](IEnumerable`1 results) in c:\src\code\Base\EntityRepository\trunk\ODataClient\ODataClient.cs:line 619
+			//   at EntityRepository.ODataClient.ODataClientQuery`1.HandleResponse(ODataClient client, OperationResponse operationResponse) in c:\src\code\Base\EntityRepository\trunk\ODataClient\ODataClientQuery.cs:line 209
 			Assert.Throws<InvalidOperationException>(() => QueryForRecordsWith(EqualitySemantics.ValuesOnly, 2));
 		}
 

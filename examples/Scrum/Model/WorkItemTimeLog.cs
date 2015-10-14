@@ -4,7 +4,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-using PD.Base.PortableUtil.Model;
+
 using Scrum.Model.Base;
 using System;
 

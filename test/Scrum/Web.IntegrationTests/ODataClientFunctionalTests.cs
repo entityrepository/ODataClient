@@ -7,8 +7,8 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using PD.Base.EntityRepository.Api;
-using PD.Base.EntityRepository.ODataClient;
+using EntityRepository.Api;
+using EntityRepository.ODataClient;
 using PD.Base.PortableUtil.Enum;
 using Scrum.Model;
 using Xunit;

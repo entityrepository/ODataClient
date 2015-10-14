@@ -5,9 +5,8 @@
 // -----------------------------------------------------------------------
 
 using System;
-using PD.Base.EntityRepository.Api;
-using PD.Base.EntityRepository.ODataClient;
-using Simple.Model;
+using EntityRepository.Api;
+using EntityRepository.ODataClient;
 
 namespace Simple.IntegrationTests
 {

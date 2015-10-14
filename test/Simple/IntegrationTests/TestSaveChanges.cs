@@ -4,8 +4,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-using PD.Base.EntityRepository.Api;
-using Simple.Model;
+using EntityRepository.Api;
 using Xunit;
 
 namespace Simple.IntegrationTests

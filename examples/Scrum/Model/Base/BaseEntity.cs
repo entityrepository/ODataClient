@@ -10,7 +10,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
-using PD.Base.PortableUtil.Model;
+//
 
 namespace Scrum.Model.Base
 {

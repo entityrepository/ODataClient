@@ -4,7 +4,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-using PD.Base.PortableUtil.Enum;
+//using PD.Base.PortableUtil.Enum;
 
 namespace Simple.Model
 {

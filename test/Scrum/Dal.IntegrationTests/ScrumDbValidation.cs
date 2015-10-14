@@ -23,7 +23,8 @@ namespace Scrum.Dal.IntegrationTests
 			EnsureIntegrationDatabaseExists();
 		}
 
-		[Fact, AutoRollback]
+		[Fact]
+        // [AutoRollback]
 		public void BasicVerificationOfScrumDb()
 		{
 			using (ScrumDb scrumDb = new ScrumDb())

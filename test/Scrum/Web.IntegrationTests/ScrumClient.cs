@@ -5,8 +5,10 @@
 // -----------------------------------------------------------------------
 
 using System;
-using PD.Base.EntityRepository.Api;
-using PD.Base.EntityRepository.ODataClient;
+using EntityRepository.Api;
+using EntityRepository.ODataClient;
+using EntityRepository.Api;
+using EntityRepository.ODataClient;
 using Scrum.Model;
 
 namespace Scrum.Web.IntegrationTests
@@ -29,7 +31,7 @@ namespace Scrum.Web.IntegrationTests
 		{}
 
 		public ScrumClient(string scrumServiceUrl)
-			: base(new ODataClient(new Uri(scrumServiceUrl), typeof(Project)), DataContextExtensions.SynchronousPreLoadDbEnums)
+			: base(new ODataClient(new Uri(scrumServiceUrl), typeof(Project)), null /* DataContextExtensions.SynchronousPreLoadDbEnums*/)
 		{}
 
 		public IEditRepository<Project> Projects { get; private set; }

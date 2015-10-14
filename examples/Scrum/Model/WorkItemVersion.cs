@@ -5,7 +5,7 @@
 // -----------------------------------------------------------------------
 
 
-using PD.Base.PortableUtil.Model;
+
 
 namespace Scrum.Model
 {

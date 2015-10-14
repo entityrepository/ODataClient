@@ -7,8 +7,9 @@
 using EntityRepository.ODataServer;
 using EntityRepository.ODataServer.EF;
 using EntityRepository.ODataServer.Model;
-using PD.Base.PortableUtil.Enum;
-using PD.Base.PortableUtil.Reflection;
+//using PD.Base.PortableUtil.Enum;
+//using PD.Base.PortableUtil.Reflection;
+using EntityRepository.ODataServer.Util;
 using Scrum.Dal;
 using System;
 using System.Web.Http;

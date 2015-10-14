@@ -5,7 +5,7 @@
 // -----------------------------------------------------------------------
 
 using System;
-using PD.Base.PortableUtil.Enum;
+//using PD.Base.PortableUtil.Enum;
 
 namespace Scrum.Model
 {

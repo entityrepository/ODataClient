@@ -8,7 +8,7 @@ using System;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
-using PD.Base.EntityRepository.ODataClient;
+using EntityRepository.ODataClient;
 using Scrum.Model;
 using Xunit;
 

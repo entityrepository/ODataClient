@@ -6,7 +6,7 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.Runtime.Serialization;
-using PD.Base.PortableUtil.Model;
+
 using Scrum.Model.Base;
 
 namespace Scrum.Model

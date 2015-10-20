@@ -9,8 +9,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using EntityRepository.Api;
 using EntityRepository.ODataClient;
-using PD.Base.PortableUtil.Enum;
 using Scrum.Model;
+using Scrum.Model.Base;
 using Xunit;
 
 namespace Scrum.Web.IntegrationTests
@@ -418,7 +418,7 @@ namespace Scrum.Web.IntegrationTests
             workItem.Project.Key = "1";
             Assert.Equal(EntityState.Unmodified, _client.WorkItems.GetEntityState(workItem));
             Assert.Equal(EntityState.Modified, _client.Projects.GetEntityState(workItem.Project));
-            Assert.Throws<AggregateException>(() => _client.SaveChanges());
+            Assert.ThrowsAsync<AggregateException>(() => _client.SaveChanges()).Wait();
         }
 
         [Fact]
@@ -472,7 +472,7 @@ namespace Scrum.Web.IntegrationTests
             // Clear the project from the WorkItem - should fail, as it's [Required]
             workItem.Project = null;
             Assert.Equal(EntityState.Modified, _client.WorkItems.GetEntityState(workItem));
-            Assert.Throws<AggregateException>(() => _client.SaveChanges());
+            Assert.ThrowsAsync<AggregateException>(() => _client.SaveChanges()).Wait();
         }
 
         public void TestReferencePropertyValidationForNewEntities()
@@ -487,14 +487,14 @@ namespace Scrum.Web.IntegrationTests
             // Test
             // Set no properties
             WorkItem workItem = new WorkItem();
-            Assert.Throws<AggregateException>(() => _client.SaveChanges());
+            Assert.ThrowsAsync<AggregateException>(() => _client.SaveChanges()).Wait();
 
             // Set a few, but not all, required properties
             workItem.Project = infraProject;
             workItem.Creator = joeUser;
             workItem.Created = DateTime.Now;
             workItem.Title = "Test workitem - should be deleted";
-            Assert.Throws<AggregateException>(() => _client.SaveChanges());
+            Assert.ThrowsAsync<AggregateException>(() => _client.SaveChanges()).Wait();
 
             // Set the remaining required properties
             workItem.Priority = Priority.Optional;

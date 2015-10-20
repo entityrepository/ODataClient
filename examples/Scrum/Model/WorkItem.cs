@@ -20,11 +20,11 @@ namespace Scrum.Model
 	{
 		#region Fields
 
-		private EntityRef<Project, int> _project;
+		private RequiredEntityRef<Project, int> _project;
 		private OptionalEntityRef<WorkItem, int> _parent;
-		private EntityRef<Priority, short> _priority;
-		private EntityRef<Status, short> _status;
-		private EntityRef<User, int> _creator;
+		private RequiredEntityRef<Priority, short> _priority;
+		private RequiredEntityRef<Status, short> _status;
+		private RequiredEntityRef<User, int> _creator;
 		private OptionalEntityRef<User, int> _resolver;
 		private OptionalEntityRef<User, int> _closer;
 		private OptionalEntityRef<Client, int> _client;

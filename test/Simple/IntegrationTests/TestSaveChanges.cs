@@ -5,6 +5,7 @@
 // -----------------------------------------------------------------------
 
 using EntityRepository.Api;
+using Simple.Model;
 using Xunit;
 
 namespace Simple.IntegrationTests

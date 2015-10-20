@@ -13,6 +13,7 @@ using EntityRepository.ODataServer.Util;
 using Scrum.Dal;
 using System;
 using System.Web.Http;
+using Scrum.Model.Base;
 
 namespace Scrum.WebApi
 {

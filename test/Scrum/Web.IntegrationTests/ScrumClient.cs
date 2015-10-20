@@ -7,8 +7,6 @@
 using System;
 using EntityRepository.Api;
 using EntityRepository.ODataClient;
-using EntityRepository.Api;
-using EntityRepository.ODataClient;
 using Scrum.Model;
 
 namespace Scrum.Web.IntegrationTests

@@ -17,7 +17,7 @@ namespace Scrum.Model
 	{
 		#region Fields
 
-		private EntityRef<Project, int> _project;
+		private RequiredEntityRef<Project, int> _project;
 		private ICollection<User> _owners;
 
 		#endregion

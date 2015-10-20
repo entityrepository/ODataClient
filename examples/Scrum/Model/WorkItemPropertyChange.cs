@@ -15,8 +15,8 @@ namespace Scrum.Model
 	public class WorkItemPropertyChange : BaseEntity<long, WorkItemPropertyChange>
 	{
 
-		private EntityRef<WorkItem, int> _workItem = new EntityRef<WorkItem, int>(workItem => workItem.ID);
-		private EntityRef<User, int> _author = new EntityRef<User, int>(user => user.ID);
+		private RequiredEntityRef<WorkItem, int> _workItem = new RequiredEntityRef<WorkItem, int>(workItem => workItem.ID);
+		private RequiredEntityRef<User, int> _author = new RequiredEntityRef<User, int>(user => user.ID);
 
 		public WorkItem WorkItem
 		{

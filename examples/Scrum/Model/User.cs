@@ -16,7 +16,7 @@ namespace Scrum.Model
 	public class User : BaseEntity<int, User>
 	{
 
-	    private EntityRef<UserGroup, int?> _group;
+	    private RequiredEntityRef<UserGroup, int?> _group;
         
         [Required]
 		[DataType(DataType.EmailAddress)]

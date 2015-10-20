@@ -41,11 +41,11 @@ namespace Scrum.Dal
 				return;
 			}
 
-			foreach (var priority in Scrum.Model.Priority.All)
+			foreach (var priority in Scrum.Model.Priority.AllDbEnums)
 			{
 				Priority.Attach(priority);
 			}
-			foreach (var status in Scrum.Model.Status.All)
+            foreach (var status in Scrum.Model.Status.AllDbEnums)
 			{
 				Status.Attach(status);
 			}

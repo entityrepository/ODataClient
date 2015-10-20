@@ -7,6 +7,7 @@
 using System;
 using EntityRepository.Api;
 using EntityRepository.ODataClient;
+using Simple.Model;
 
 namespace Simple.IntegrationTests
 {

@@ -24,7 +24,7 @@ namespace Scrum.Dal.IntegrationTests
 		protected override void Seed(ScrumDb scrumDb)
 		{
 			// Skip rest of seed iff values are already present
-			if ((scrumDb.Priority.Count() >= Priority.All.Count())
+			if ((scrumDb.Priority.Count() >= Priority.AllDbEnums.Count())
 			    && (scrumDb.Users.Count() >= 2)
 			    && (scrumDb.Projects.Count() >= 2))
 			{

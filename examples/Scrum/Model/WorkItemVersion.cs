@@ -5,7 +5,7 @@
 // -----------------------------------------------------------------------
 
 
-
+using Scrum.Model.Base;
 
 namespace Scrum.Model
 {
@@ -16,7 +16,7 @@ namespace Scrum.Model
 	public sealed class WorkItemVersion
 	{
 
-		private EntityRef<WorkItem, int> _workItem = new EntityRef<WorkItem, int>(workItem => workItem.ID);
+		private RequiredEntityRef<WorkItem, int> _workItem = new RequiredEntityRef<WorkItem, int>(workItem => workItem.ID);
 
 		public WorkItemVersion(WorkItem workItem, byte version)
 		{

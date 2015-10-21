@@ -66,7 +66,9 @@ namespace EntityRepository.ODataClient
 					structuralProperties.Add(_type.GetProperty(edmStructuralProperty.Name));
 				}
 			}
-			_structuralProperties = structuralProperties.ToArray();
+
+            // EF can pick up private properties (eg: those marked as navigational).  We omit them on spec.
+			_structuralProperties = structuralProperties.Where(p => p != null).ToArray();
 
 			var navigationProperties = new List<PropertyInfo>();
 			var linkProperties = new List<PropertyInfo>();
@@ -84,8 +86,8 @@ namespace EntityRepository.ODataClient
 					}
 				}
 			}
-			_navigationProperties = navigationProperties.ToArray();
-			_collectionProperties = linkProperties.ToArray();
+            _navigationProperties = navigationProperties.Where(p => p != null).ToArray();
+            _collectionProperties = linkProperties.Where(p => p != null).ToArray();
 
 			// Reflect for ValidationAttributes on all properties
 			var validationInfo = new List<PropertyValidationInfo>();
